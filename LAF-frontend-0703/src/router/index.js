@@ -12,6 +12,7 @@ import HomePage from '../pages/HomePage.vue';
 import MyPosts from '../pages/dashboard/MyPosts.vue';
 import MyMessages from '../pages/dashboard/MyMessages.vue';
 import MyNotifications from '../pages/dashboard/MyNotifications.vue';
+import ProfileSettings from '../pages/dashboard/ProfileSettings.vue';
 import MapViewPage from '@/pages/MapViewPage.vue';
 
 const routes = [
@@ -56,12 +57,6 @@ const routes = [
     component: PublishPage, // 暂时注释掉，因为文件还未创建
     meta: { requiresAuth: true } // <--- 添加 meta 字段
   },
-  {
-    path: '/dashboard',
-    name: 'Dashboard',
-    component: UserDashboardPage, // 暂时注释掉
-    meta: { requiresAuth: true } // <--- 添加 meta 字段
-  },
   // 新增的地图模式路由
   {
     path: '/map',
@@ -72,9 +67,9 @@ const routes = [
   // 新增的个人中心路由
   {
     path: '/dashboard',
+    redirect: '/dashboard/posts', // 默认重定向到“我发布的”
     component: UserDashboardPage,
     meta: { requiresAuth: true }, // 访问个人中心需要登录
-    redirect: '/dashboard/posts', // 默认重定向到“我发布的”
     children: [
       {
         path: 'posts',
@@ -92,11 +87,11 @@ const routes = [
         component: MyNotifications,
       },
       // todo: 个人资料设置
-      // { 
-      //   path: 'settings',
-      //   name: 'DashboardSettings',
-      //   component: ProfileSettings,
-      // },
+      { 
+        path: 'settings',
+        name: 'DashboardSettings',
+        component: ProfileSettings,
+      },
     ],
   },
     // 新增路由
@@ -111,12 +106,6 @@ const routes = [
     name: 'EditItem', 
     component: PublishPage, // 复用 PublishPage
     meta: { requiresAuth: true } 
-  },
-  {
-    path: '/dashboard',
-    name: 'UserDashboard',
-    component: UserDashboardPage,
-    meta: { requiresAuth: true }
   }
 ];
 

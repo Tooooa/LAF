@@ -27,23 +27,25 @@
           <option value="electronics">电子产品</option>
           <option value="accessories">配饰用品</option>
           <option value="documents">证件文件</option>
-          <!-- ... 更多分类 ... -->
+          <option value="elsethings">其他</option>
         </select>
       </div>
       
       <div class="form-group">
         <label for="location">地点</label>
-        <LocationInput id="location" v-model="formData.location" />
+        <!-- todo 这里的地点选择还没实现 -->
+        <!-- 两个值，location_id和location_detail -->
+        <LocationInput id="location" v-model="formData.location_detail" />
       </div>
 
       <div class="form-group">
-        <label for="lostDate">{{ formData.type === 'lost' ? '丢失日期' : '拾取日期' }}</label>
-        <input id="lostDate" type="date" v-model="formData.lostDate" required />
+        <label for="lost_date">{{ formData.type === 'lost' ? '丢失日期' : '拾取日期' }}</label>
+        <input id="lost_date" type="date" v-model="formData.lost_date" required />
       </div>
 
       <div class="form-group">
-        <label for="contactInfo">联系方式 (手机号/微信/QQ)</label>
-        <input id="contactInfo" type="text" v-model="formData.contactInfo" required />
+        <label for="contact_info">联系方式 (手机号/微信/QQ)</label>
+        <input id="contact_info" type="text" v-model="formData.contact_info" required />
       </div>
 
       <div class="form-group">
@@ -69,22 +71,27 @@ import { useRoute, useRouter } from 'vue-router';
 import { createItem, updateItem, getItemById } from '@/api/items.js';
 import ImageUploader from '../components/ImageUploader.vue';
 import LocationInput from '../components/LocationInput.vue';
+import { useUserStore } from '@/store/user.js'; 
 
 const route = useRoute();
 const router = useRouter();
+const userStore = useUserStore();
 
 const isEditMode = ref(false);
 const itemId = ref(null);
 const isSubmitting = ref(false);
+
+console.log('[test2]: ', userStore.user.id);
 
 const formData = ref({
   type: 'lost',
   title: '',
   description: '',
   category: 'electronics', // 默认值
-  location: '',
-  lostDate: new Date().toISOString().split('T')[0], // 默认为今天
-  contactInfo: '',
+  location_detail: '',
+  lost_date: new Date().toISOString().split('T')[0], // 默认为今天
+  contact_info: '',
+  author_id: userStore.user.id,
   images: [],
   tags: [],
 });
@@ -97,36 +104,47 @@ const tagsInput = computed({
   }
 });
 
-onMounted(async () => {
-  if (route.params.id) {
-    isEditMode.value = true;
-    itemId.value = route.params.id;
-    try {
-      const res = await getItemById(itemId.value);
-      if (res.success) {
-        // 使用 API 返回的数据填充表单
-        // 注意：API 返回的字段名需要和 formData 的 key 对应
-        const item = res.data;
-        formData.value = {
-          type: item.type,
-          title: item.title,
-          description: item.description,
-          category: item.category,
-          location: item.location, // 假设API返回的是组合好的地点字符串
-          lostDate: item.lostDate,
-          contactInfo: item.contactInfo,
-          images: item.images || [],
-          tags: item.tags || [],
-        };
-      } else {
-        alert('获取物品信息失败');
-        router.push('/');
-      }
-    } catch (error) {
-      alert('网络错误，无法加载物品信息');
-      router.push('/');
+const loadItemData = async () => {
+  if (!route.params.id) return;
+  
+  isEditMode.value = true;
+  itemId.value = route.params.id;
+  isLoading.value = true;
+  loadError.value = null;
+  
+  try {
+    const res = await getItemById(itemId.value);
+    
+    if (!res.success) {
+      throw new Error('获取物品信息失败');
     }
+    
+    // 映射API数据到表单
+    const { data: item } = res;
+    formData.value = {
+      type: item.type,
+      title: item.title,
+      description: item.description,
+      category: item.category?.code || item.category, // 兼容不同API结构
+      location_detail: item.location_detail || '',
+      lost_date: item.lost_date?.split('T')[0] || new Date().toISOString().split('T')[0],
+      contact_info: item.contact_info,
+      images: item.images || [],
+      tags: item.tags || [],
+    };
+  } catch (error) {
+    console.error('加载物品数据失败:', error);
+    loadError.value = error.message;
+    router.push('/'); // 或者显示错误信息而不是直接跳转
+  } finally {
+    isLoading.value = false;
   }
+};
+
+onMounted(async () => {
+  loadItemData().catch(error => {
+    console.error('初始化错误:', error);
+  });
 });
 
 const handleSubmit = async () => {
@@ -139,12 +157,13 @@ const handleSubmit = async () => {
       res = await createItem(formData.value);
     }
 
-    if (res.success) {
+    console.log('[DEBUG]: ', res);
+    if (res.code == 201) {
       alert(isEditMode.value ? '更新成功！' : '发布成功！');
       // 跳转到物品详情页
-      router.push(`/items/${res.data.id}`);
+      router.push(`/items/${res.id}`);
     } else {
-      alert('操作失败: ' + res.message);
+      alert('操作失败: ' + res.code);
     }
   } catch (error) {
     console.error('Submit error:', error);

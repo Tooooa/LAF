@@ -12,6 +12,7 @@ const locationRoutes = require('./routes/location');
 const itemRoutes = require('./routes/items'); 
 const mapRoutes = require('./routes/map');
 const authRoutes = require('./routes/auth');
+const profileRoutes = require('./routes/profile');
 const { errorHandler, notFound } = require('./middleware/errorMiddleware');
 
 const app = express();
@@ -42,6 +43,7 @@ app.use('/v1/locations', locationRoutes);
 app.use('/v1/items', itemRoutes);
 app.use('/v1/map', mapRoutes);
 app.use('/v1/auth', authRoutes);
+app.use('/v1/profile', profileRoutes);
 
 // 健康检查
 app.get('/health', (req, res) => {

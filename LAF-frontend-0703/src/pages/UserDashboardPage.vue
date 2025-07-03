@@ -27,7 +27,7 @@
 <script setup>
 import { computed } from 'vue';
 import { useRouter } from 'vue-router';
-import { useUserStore } from '@/store/user'; // 假设使用 Pinia
+import { useUserStore } from '@/store/user'; // 使用 Pinia
 import defaultAvatar from '@/assets/default-image.png'; // 引入默认头像
 
 const userStore = useUserStore();

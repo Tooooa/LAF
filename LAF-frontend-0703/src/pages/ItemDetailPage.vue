@@ -69,7 +69,7 @@
             v-if="isOwner && item.status === 'active'" 
             @click="markAsResolved" 
             class="action-button danger"
-          >
+            >
             标记为已找回
           </button>
         </footer>
@@ -102,6 +102,7 @@ const itemId = route.params.id;
 // 判断当前登录用户是否是物品发布者
 const isOwner = computed(() => {
   // 必须确保 userStore.user 和 item.value 都已加载
+  console.log('[TEST]: ', userStore.user, item.value);
   if (!userStore.user || !item.value?.user) {
     return false;
   }
@@ -121,6 +122,7 @@ const mainImage = computed(() => {
 const onImageError = (event) => {
   event.target.src = defaultImage;
 };
+
 // 标记为已解决（已找回）
 const markAsResolved = async () => {
   if (!confirm('确定要将此物品标记为“已解决”吗？此操作不可撤销。')) {

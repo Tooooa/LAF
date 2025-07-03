@@ -18,14 +18,17 @@
     <div v-else-if="items.length > 0">
       <div class="items-list">
         <!-- 复用你已有的 ItemCard 组件 -->
-        <ItemCard v-for="item in items" :key="item.id" :item="item" />
+        <ItemCard 
+          v-for="item in items" 
+          :key="item.id" 
+          :item-data="item"
+        />
       </div>
       <!-- 复用你已有的 Pagination 组件 -->
       <Pagination
-        v-if="pagination.totalPages > 1"
-        :current-page="pagination.page"
+        :current-page="pagination.currentPage"
         :total-pages="pagination.totalPages"
-        @page-changed="handlePageChange"
+        @page-change="handlePageChange"
       />
     </div>
 
@@ -50,9 +53,9 @@ import Pagination from '@/components/Pagination.vue';
 const userStore = useUserStore();
 const items = ref([]);
 const pagination = ref({
-  page: 1,
+  currentPage: 1,
   pageSize: 10,
-  total: 0,
+  totalItems: 0,
   totalPages: 1,
 });
 const loading = ref(true); // 初始为 true，进入页面立即加载
@@ -75,17 +78,18 @@ const fetchUserItems = async (page = 1) => {
   try {
     const params = {
       page: page,
-      pageSize: pagination.value.pageSize,
-      // 关键：根据 API 设计，传入 authorId 进行筛选
-      authorId: userId.value, 
+      pageSize: pagination.pageSize, 
+      authorId: userId.value,
       sortBy: 'createdAt',
       sortOrder: 'desc',
     };
     // 使用你封装好的 getItems 方法
     const response = await getItems(params);
-    // 假设你的 request 工具返回的数据在 response.data 中
-    items.value = response.data.items;
-    pagination.value = response.data.pagination;
+    // console.log('[DEBUG]: my posts: ', response);
+    items.value = response;
+    pagination.totalItems = response.length || 0;
+    pagination.totalPages = Math.ceil(pagination.totalItems / pagination.pageSize) || 1;
+    console.log('成功获取用户发布的物品', response);
   } catch (err) {
     console.error("获取用户物品列表失败:", err);
     error.value = "获取物品列表失败，请检查网络或稍后再试。";
