@@ -269,6 +269,7 @@ async function getItemsList(req, res) {
     const {
         page = 1,
         limit = 10,
+        id,
         type,      // 'lost' 或 'found'
         category,  // 分类 code, e.g., 'documents'
         status = 'active', // 默认只看活动中的
@@ -295,6 +296,11 @@ async function getItemsList(req, res) {
         // --- 2. 动态构建 WHERE 子句 ---
         // 注意：为避免SQL注入，所有参数都使用 .input() 绑定
         
+        if (id) {
+            whereClauses.push("i.id = @id");
+            request.input('id', sql.VarChar, id);
+        }
+
         // 筛选 status
         if (status) {
             whereClauses.push("i.status = @status");
@@ -397,6 +403,7 @@ async function getItemsList(req, res) {
 
         // --- 6. 格式化返回结果 ---
         const responseData = itemsResult.recordset.map(item => ({
+            code: 200,
             id: item.id,
             type: item.type,
             title: item.title,
@@ -445,7 +452,7 @@ async function getItemsList(req, res) {
 
         // 在控制台输出（方便调试）
         console.log(`[DEBUG] 成功响应 GET /items, 返回 ${responseData.length} 条数据`);
-        // console.log('[DEBUG] API响应数据:', JSON.stringify(response, null, 2));  // 格式化输出
+        console.log('[DEBUG] API响应数据:', JSON.stringify(response, null, 2));  // 格式化输出
 
         // 发送响应
         res.status(200).json(response);

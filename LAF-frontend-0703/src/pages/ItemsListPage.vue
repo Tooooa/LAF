@@ -72,7 +72,7 @@ async function fetchItems() {
 
     const response = await getItems(params);
 
-    console.log(response);
+    // console.log("[DEBUG]: ", response);
     
     // todo: 检测空数据
     if (!response || response.length === 0) {
