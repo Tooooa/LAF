@@ -14,6 +14,23 @@ export function getItems(params) {
 }
 
 /**
+ * 根据ID删除一个物品（软删除）
+ * @param {string | number} itemId - 要删除的物品的ID
+ * @param {string | number} authorId - 操作者的ID，用于后端验证
+ * @returns {Promise}
+ */
+export function deleteItem(itemId, authorId) {
+  return request({
+    url: `/items/${itemId}`,
+    method: 'delete',
+    // 将 authorId 放入请求的 data 属性中，axios会将其作为请求体发送
+    data: {
+      authorId: authorId 
+    }
+  });
+}
+
+/**
  * 根据ID获取单个物品的详细信息
  * @param {string | number} itemId - 物品的ID
  * @returns {Promise}

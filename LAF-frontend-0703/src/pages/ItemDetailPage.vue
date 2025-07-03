@@ -51,26 +51,31 @@
           <p><strong>发布者：</strong>{{ item.author?.username || '匿名用户' }}</p>
           <p><strong>发布时间：</strong>{{ new Date(item.createdAt).toLocaleString() }}</p>
         </div>
-
         <footer class="info-footer">
-          <!-- 操作按钮 (目前仅为占位符) -->
-          <button class="action-button primary">联系TA (发私信)</button>
-          <!-- 编辑按钮：使用 router-link 进行导航 -->
-          <router-link 
-            v-if="isOwner" 
-            :to="{ name: 'EditItem', params: { id: item.id } }" 
-            class="action-button"
-          >
-            编辑
-          </router-link>
-
-          <!-- 标记按钮：添加 click 事件，并确保只有 active 状态才显示 -->
+          <!-- 
+            *** 新增：标记为已找回按钮 ***
+            - v-if="isOwner && item.status === 'active'": 
+              确保只有所有者，并且在物品是活动状态时，才显示此按钮。
+            - @click="markAsResolved": 点击时调用你已经写好的函数。
+          -->
           <button 
             v-if="isOwner && item.status === 'active'" 
             @click="markAsResolved" 
-            class="action-button danger"
-            >
+            class="action-button success"
+          >
             标记为已找回
+          </button>
+          <!-- 
+            删除按钮 
+            - v-if="isOwner": 确保只有物品的发布者才能看到此按钮。
+            - @click="handleDeleteItem": 点击时调用我们的删除方法。
+          -->
+          <button 
+            v-if="isOwner" 
+            @click="handleDeleteItem" 
+            class="action-button danger"
+          >
+            删除信息
           </button>
         </footer>
       </div>
@@ -86,6 +91,7 @@ import StatusBadge from '@/components/StatusBadge.vue'; // 复用状态徽章组
 import defaultImage from '@/assets/default-image.png'; // 引入默认图片
 import { useUserStore } from '@/store/user';
 import { updateItemStatus } from '@/api/items'; 
+import { deleteItem } from '@/api/items.js';
 
 const route = useRoute(); // 获取当前路由对象
 const router = useRouter();
@@ -101,12 +107,24 @@ const itemId = route.params.id;
 // -- Computed 属性 --
 // 判断当前登录用户是否是物品发布者
 const isOwner = computed(() => {
-  // 必须确保 userStore.user 和 item.value 都已加载
-  console.log('[TEST]: ', userStore.user, item.value);
-  if (!userStore.user || !item.value?.user) {
+  // 1. 确保当前登录用户信息存在
+  if (!userStore.user || !userStore.user.id) {
+    console.log('[DEBUG] isOwner: 当前登录用户信息不存在。');
     return false;
   }
-  return userStore.user.id === item.value.user.id;
+  
+  // 2. 确保物品信息和其作者信息存在
+  if (!item.value || !item.value.author || !item.value.author.id) {
+    console.log('[DEBUG] isOwner: 物品信息或作者信息不存在。');
+    return false;
+  }
+  
+  // 3. 打印出正在比较的两个ID，这是调试的关键步骤
+  console.log(`[DEBUG] isOwner: 正在比较... 当前用户ID: ${userStore.user.id} (类型: ${typeof userStore.user.id}), 物品作者ID: ${item.value.author.id} (类型: ${typeof item.value.author.id})`);
+
+  // 4. 进行比较
+  // 使用 String() 来比较可以避免因类型不同（如 number vs string）导致的问题
+  return String(userStore.user.id) === String(item.value.author.id);
 });
 
 // 计算主图URL
@@ -132,10 +150,13 @@ const markAsResolved = async () => {
   try {
     const res = await updateItemStatus(item.value.id, {
       status: 'resolved',
+      authorId: userStore.user.id,
       note: '用户自行标记为已解决' // 可选备注
     });
 
-    if (res.success) {
+    console.log('[DEBUG]: ', res);
+
+    if (res.code == 200) {
       alert('状态更新成功！');
       // 直接在前端更新状态，页面会立即响应
       item.value.status = 'resolved'; 
@@ -147,6 +168,50 @@ const markAsResolved = async () => {
     alert('网络错误，操作失败。');
   }
 };
+
+async function handleDeleteItem() {
+  // 最佳实践：在执行危险操作前，先向用户确认
+  if (!window.confirm('您确定要删除此条信息吗？此操作不可撤销。')) {
+    return; // 如果用户点击“取消”，则函数提前结束
+  }
+
+  // 检查 item.value 和 item.value.id 是否存在，避免错误
+  if (!item.value || !item.value.id) {
+    alert('错误：无法获取物品ID，无法删除。');
+    return;
+  }
+
+  try {
+    console.log(`[DEBUG] 准备删除ID为 ${item.value.id} 的物品...`);
+    
+    // 3. 调用 API 函数，传入物品ID
+    const response = await deleteItem(item.value.id, userStore.user.id);
+
+    // 4. 处理后端返回的响应
+    // 假设你的 request 封装在成功时会直接返回 data 部分
+    // 并且后端成功时返回 { success: true, message: '删除成功' }
+
+    console.log('[DEBUG]: ', response);
+    if (response && response.code == 200) {
+      alert('信息删除成功！'); // 给用户成功的反馈
+
+      // 删除成功后，跳转到物品列表页
+      router.push({ name: 'ItemsList' }); // 假设你的列表页路由名叫 'ItemsList'
+      
+    } else {
+      // 如果后端返回了 success: false 的情况
+      throw new Error(response.message || '删除失败，但未收到明确错误信息。');
+    }
+
+  } catch (error) {
+    console.error('删除物品时发生错误:', error);
+    
+    // 向用户显示一个友好的错误提示
+    // 尝试从axios错误中获取后端返回的错误消息
+    const errorMessage = error.response?.data?.message || error.message || '网络错误，删除失败，请稍后重试。';
+    alert(`错误: ${errorMessage}`);
+  }
+}
 
 // 获取物品详情的函数
 async function fetchItemDetail() {
@@ -282,5 +347,14 @@ onMounted(() => {
 }
 .action-button.danger:hover {
     background-color: #c82333;
+}
+
+.action-button.success {
+  background-color: #dcfce7; /* 淡绿色背景 */
+  border-color: #bbf7d0;
+  color: #166534; /* 深绿色文字 */
+}
+.action-button.success:hover {
+  background-color: #d0f7de;
 }
 </style>

@@ -285,6 +285,7 @@ async function getItemsList(req, res) {
         keyword,    // 搜索关键字
         sortBy = 'createdAt', // 默认排序字段
         sortOrder = 'desc',   // 默认排序顺序
+        authorId,
         locationId // 按地点ID筛选
     } = req.query;
 
@@ -338,6 +339,12 @@ async function getItemsList(req, res) {
         if (keyword) {
             whereClauses.push("(i.title LIKE @searchQuery OR i.description LIKE @searchQuery)");
             request.input('searchQuery', sql.NVarChar, `%${keyword}%`);
+        }
+
+        if (authorId) {
+            whereClauses.push("i.author_id = @authorId");
+            // 关键修正：使用 sql.BigInt 而不是 sql.VarChar
+            request.input('authorId', sql.BigInt, authorId); 
         }
 
         const whereCondition = whereClauses.length > 0 ? `WHERE ${whereClauses.join(' AND ')}` : '';
@@ -482,8 +489,230 @@ async function getItemsList(req, res) {
     }
 }
 
+// *** 新增的、用于软删除物品的函数 ***
+async function deleteItem(req, res) {
+    console.log(`[DEBUG] 接收到 DELETE /items/${req.params.id} 请求`);
+    // 打印一下请求体，确保前端的数据正确发送过来了
+    console.log('[DEBUG] 请求体 (req.body):', req.body); 
+
+    if (!pool) {
+        console.error('[DEBUG] 错误：数据库连接池未准备好');
+        return res.status(503).json({ success: false, code: 503, message: '数据库服务不可用' });
+    }
+
+    const { id } = req.params;
+    
+    // --- 关键修改点在这里 ---
+    // 1. 从请求体 (req.body) 中解构出 authorId
+    const { authorId } = req.body;
+
+    // 2. 将获取到的 authorId 赋值给 currentUserId 变量
+    //    这里我们直接使用 authorId 作为 currentUserId
+    const currentUserId = authorId;
+
+    if (!id) {
+        return res.status(400).json({ success: false, code: 400, message: '缺少物品ID' });
+    }
+
+    const transaction = new sql.Transaction(pool);
+    try {
+        console.log('[DEBUG] 准备开始数据库事务...');
+        await transaction.begin();
+        console.log('[DEBUG] 数据库事务已开始');
+        
+        const request = new sql.Request(transaction);
+
+        // 1. 检查物品是否存在，并验证操作者是否为物品所有者
+        console.log(`[DEBUG] 正在查询物品 ${id} 的所有者...`);
+        const itemResult = await request
+            .input('itemId', sql.BigInt, id)
+            .query('SELECT author_id, status FROM items WHERE id = @itemId');
+
+        if (itemResult.recordset.length === 0) {
+            await transaction.commit(); // 物品不存在，无需回滚，正常提交空事务即可
+            console.warn(`[DEBUG] 物品 ${id} 未找到`);
+            return res.status(404).json({ success: false, code: 404, message: '物品不存在' });
+        }
+
+        const item = itemResult.recordset[0];
+        
+        // 权限验证：检查当前用户是否为作者
+        // 注意：数据库中的 author_id 是 bigint，需要与 currentUserId (number) 进行比较
+        if (item.author_id.toString() !== currentUserId.toString()) {
+            await transaction.commit();
+            console.error(`[DEBUG] 权限错误: 用户 ${currentUserId} 尝试删除用户 ${item.author_id} 的物品 ${id}`);
+            return res.status(403).json({ success: false, code: 403, 
+                data: {
+                    code: 403
+                },
+                message: '无权删除此物品' });
+        }
+        
+        // 如果物品已经是 'deleted' 状态，可以直接返回成功，避免重复操作
+        if (item.status === 'deleted') {
+            await transaction.commit();
+            console.log(`[DEBUG] 物品 ${id} 已被删除，无需重复操作`);
+            return res.status(200).json({ success: true, code: 200, 
+                data: {
+                    code: 200
+                },
+                message: '物品已被删除' });
+        }
+
+        // 2. 执行软删除（更新status字段）
+        console.log(`[DEBUG] 正在软删除物品 ${id}...`);
+        const updateResult = await request
+            .input('itemIdForUpdate', sql.BigInt, id) // 重新绑定参数或使用新request
+            .query("UPDATE items SET status = 'deleted', updated_at = GETDATE() WHERE id = @itemIdForUpdate");
+
+        if (updateResult.rowsAffected[0] === 0) {
+            // 这是一个理论上的边缘情况，如果发生说明在检查和更新之间物品被删了
+            throw new Error('更新物品状态失败，未找到匹配的行');
+        }
+
+        console.log(`[DEBUG] 物品 ${id} 软删除成功，准备提交事务...`);
+        await transaction.commit();
+        console.log('[DEBUG] 事务已提交');
+
+        res.status(200).json({ success: true, code: 200, 
+            data: {
+                code: 200
+            },
+            message: '删除成功' });
+
+    } catch (error) {
+        console.error(`[DEBUG] 删除物品 ${id} 时发生错误:`, error);
+        try {
+            if (transaction.rolledBack === false) {
+                console.log('[DEBUG] 准备回滚事务...');
+                await transaction.rollback();
+                console.log('[DEBUG] 事务已回滚');
+            }
+        } catch (rollbackError) {
+            console.error('[DEBUG] 事务回滚失败:', rollbackError);
+        }
+        res.status(500).json({ success: false, code: 500, 
+            data: {
+                code: 500
+            },
+            message: '删除失败，请稍后重试' });
+    }
+}
+
+// *** 新增的、用于更新物品状态的函数 ***
+async function updateItemStatus(req, res) {
+    const { id } = req.params; // 从URL中获取物品ID
+    const { status, note } = req.body; // 从请求体中获取新状态和备注
+    
+    console.log(`[DEBUG] 接收到 PUT /items/${id}/status 请求`);
+    console.log('[DEBUG] 请求体 (req.body):', req.body);
+
+    // --- 1. 基本验证 ---
+    if (!pool) {
+        return res.status(503).json({ success: false, message: '数据库服务不可用' });
+    }
+    // 验证传入的状态是否是允许修改的状态
+    if (status !== 'resolved' && status !== 'closed') { // 假设我们只允许更新为 'resolved' 或 'closed'
+        return res.status(400).json({ success: false, message: '无效的状态值' });
+    }
+
+    // --- 同样需要权限验证 ---
+    const { authorId } = req.body;
+    const currentUserId = authorId;
+
+    const transaction = new sql.Transaction(pool);
+    try {
+        await transaction.begin();
+        const request = new sql.Request(transaction);
+
+        // --- 2. 检查物品是否存在并验证所有权 ---
+        const itemResult = await request
+            .input('itemId', sql.BigInt, id)
+            .query('SELECT author_id, status FROM items WHERE id = @itemId');
+
+        if (itemResult.recordset.length === 0) {
+            await transaction.commit();
+            return res.status(404).json({ success: false, 
+                data: {
+                    code: 404
+                }, 
+                message: '物品不存在' });
+        }
+
+        const item = itemResult.recordset[0];
+
+        // 权限验证
+        if (item.author_id.toString() !== currentUserId.toString()) {
+            await transaction.commit();
+            return res.status(403).json({ success: false, 
+                data: {
+                    code: 403
+                }, 
+                message: '无权修改此物品的状态' });
+        }
+        
+        // 避免重复更新
+        if (item.status === status) {
+             await transaction.commit();
+             return res.status(200).json({ success: true, 
+                data: {
+                    code: 200
+                }, 
+                message: `物品状态已经是'${status}'` });
+        }
+
+        // --- 3. 执行更新操作 ---
+        console.log(`[DEBUG] 正在更新物品 ${id} 的状态为 '${status}'...`);
+        const updateQuery = `
+            UPDATE items 
+            SET 
+                status = @status, 
+                resolve_note = @note, -- 更新备注字段
+                resolved_at = GETDATE(), -- 更新解决时间
+                updated_at = GETDATE()
+            WHERE id = @itemId;
+        `;
+
+        const updateResult = await request
+            .input('status', sql.VarChar(10), status)
+            .input('note', sql.NVarChar(255), note || null) // 如果note未提供，则为NULL
+            // .input('itemId', sql.BigInt, id) // 注意：input参数名不能重复，所以这里不需要再加itemId
+            .query(updateQuery);
+
+        if (updateResult.rowsAffected[0] === 0) {
+            throw new Error('更新物品状态失败，未找到匹配的行');
+        }
+
+        await transaction.commit();
+        console.log(`[DEBUG] 物品 ${id} 状态更新成功`);
+
+        res.status(200).json({ success: true, 
+            data: {
+                code: 200
+            }, 
+            message: '状态更新成功' });
+
+    } catch (error) {
+        console.error(`[DEBUG] 更新物品 ${id} 状态时发生错误:`, error);
+        if (transaction.rolledBack === false) {
+            try { await transaction.rollback(); } catch (e) { /* ignore */ }
+        }
+        res.status(500).json({ success: false, 
+            data: {
+                code: 500
+            }, 
+            message: '更新失败，请稍后重试' });
+    }
+}
+
 const router = express.Router();
+
 router.post('/', /*authenticateToken,*/ validateItemInput, createItem);
 
 router.get('/', getItemsList); // 注册我们刚刚添加的 GET 路由
+
+router.delete('/:id', /*authenticateToken,*/ deleteItem);
+
+router.put('/:id/status', /*authenticateToken,*/ updateItemStatus);
+
 module.exports = router;
