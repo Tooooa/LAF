@@ -95,17 +95,3 @@ export const updateItemStatus = (itemId, statusData) => {
     data: statusData,
   });
 };
-
-/**
- * 智能搜索
- * @param {Object} searchData - 包含 { query: '搜索内容' } 的对象
- * @returns {Promise<Object>}
- */
-export const intelligentSearch = (searchData) => {
-  return request({
-    url: '/search/intelligent',
-    method: 'post',
-    data: searchData,
-  });
-};
-

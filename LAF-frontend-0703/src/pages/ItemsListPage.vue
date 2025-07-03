@@ -22,7 +22,8 @@
       </div>
       <div v-else class="empty-state">没有找到相关物品。</div>
       
-      <Pagination 
+      <!-- 分页导航栏 -->
+      <Pagination
         :current-page="pagination.currentPage"
         :total-pages="pagination.totalPages"
         @page-change="handlePageChange"
@@ -46,7 +47,7 @@ const pagination = reactive({
   currentPage: 1,
   totalPages: 1,
   totalItems: 0,
-  pageSize: 12,
+  pageSize: 8,
 });
 
 // 2. 创建一个 ref 来存储当前的筛选条件
@@ -59,7 +60,7 @@ async function fetchItems() {
   try {
     const params = {
       page: pagination.currentPage,
-      limit: pagination.pageSize,
+      // limit: pagination.pageSize,
       ...currentFilters.value
     };
     
@@ -82,12 +83,11 @@ async function fetchItems() {
       pagination.totalPages = response.pagination?.totalPages || 0;
       return;
     }
-    
+    console.log('[DEBUG]: return value, ', response);
     items.value = response; 
     
-    pagination.totalItems = response.pagination?.totalItems || 0;
-    pagination.totalPages = response.pagination?.totalPages || 
-                          Math.ceil(pagination.totalItems / pagination.pageSize) || 1;
+    pagination.totalItems = response.length || 0;
+    pagination.totalPages = Math.ceil(pagination.totalItems / pagination.pageSize) || 1;
   } catch (err) {
     console.error('获取物品列表失败:', err);
     error.value = err.message || '未知错误';

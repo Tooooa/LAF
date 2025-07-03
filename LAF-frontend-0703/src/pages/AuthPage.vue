@@ -89,11 +89,13 @@ const handleLogin = async () => {
   try {
     const response = await login(loginForm.value);
 
+    console.log('[DEBUG]: ', response);
+
     if (response.code == 200) {
       // 调用 Pinia store 中的 action 保存用户信息
       userStore.loginSuccess({
         user: response.user,       // 用户信息
-        accessToken: response.token, // token
+        accessToken: response.accessToken, // token
         refreshToken: response.refreshToken // 如果有的话
       });
       alert('登录成功！');
@@ -118,11 +120,14 @@ const handleRegister = async () => {
   }
   
   try {
+    console.log('[Debug]: ', registerForm);
     const response = await register(registerForm.value);
-    if (response.success) {
+    console.log('[Debug]: ', response);
+    if (response) {
       alert('注册成功，请登录！');
       // 注册成功后切换到登录Tab，并清空注册表单
       activeTab.value = 'login';
+
       registerForm.value = { username: '', phone: '', password: '', confirmPassword: '', email: '' };
     } else {
       alert(`注册失败: ${response.message}`);

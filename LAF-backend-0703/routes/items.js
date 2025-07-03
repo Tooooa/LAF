@@ -101,12 +101,19 @@ async function createItem(req, res) {
     }
 
     const { 
-        type, title, description, category, // `category` 现在是 "documents" 这样的字符串
-        location_id, location_detail, lost_date, 
-        contact_info, contact_type = 'phone', 
+        type, 
+        title, 
+        description, 
+        category, // `category` 现在是 "documents" 这样的字符串
+        location_id, 
+        location_detail, 
+        lost_date, 
+        contact_info, 
+        contact_type, 
+        author_id,
         images = [], tags = [] 
     } = req.body;
-    
+    console.log('[DEBUG]: ', req.body);
     // --- 1. 预处理和验证 ---
     console.log(`[DEBUG] 接收到分类代码: ${category}`);
     let categoryId;
@@ -152,9 +159,9 @@ async function createItem(req, res) {
 
         // --- 2. 核心数据库插入操作 ---
         const insertItemSql = `
-          INSERT INTO items (type, title, description, category_id, location_id, location_detail, lost_date, contact_info, contact_type, latitude, longitude, coordinate, author_id, status, created_at, updated_at) 
+          INSERT INTO items (type, title, description, category_id, location_id, location_detail, lost_date, contact_info, contact_type, latitude, longitude, author_id, status, created_at, updated_at) 
           OUTPUT INSERTED.id, INSERTED.created_at -- 同时返回ID和创建时间
-          VALUES (@type, @title, @description, @category_id, @location_id, @location_detail, @lost_date, @contact_info, @contact_type, @latitude, @longitude, CASE WHEN @latitude IS NOT NULL AND @longitude IS NOT NULL THEN geography::Point(@latitude, @longitude, 4326) ELSE NULL END, @author_id, 'active', GETDATE(), GETDATE());
+          VALUES (@type, @title, @description, @category_id, @location_id, @location_detail, @lost_date, @contact_info, @contact_type, @latitude, @longitude, @author_id, 'active', GETDATE(), GETDATE());
         `;
         
         console.log('[DEBUG] 准备插入主物品信息...');
@@ -171,7 +178,8 @@ async function createItem(req, res) {
             .input('contact_type', sql.VarChar(20), contact_type)
             .input('latitude', sql.Decimal(10, 8), latitude)
             .input('longitude', sql.Decimal(11, 8), longitude)
-            .input('author_id', sql.BigInt, userId)
+            // .input('coordinate', ) todo: 待补充
+            .input('author_id', sql.BigInt, author_id)
             .query(insertItemSql);
         
         const newItem = itemResult.recordset[0];
@@ -215,6 +223,7 @@ async function createItem(req, res) {
         // --- 3. 在代码中构建响应数据 ---
         console.log('[DEBUG] 准备构建成功响应...');
         const responseData = {
+            code: 201, 
             id: itemId,
             type: type,
             title: title,
@@ -452,7 +461,7 @@ async function getItemsList(req, res) {
 
         // 在控制台输出（方便调试）
         console.log(`[DEBUG] 成功响应 GET /items, 返回 ${responseData.length} 条数据`);
-        console.log('[DEBUG] API响应数据:', JSON.stringify(response, null, 2));  // 格式化输出
+        // console.log('[DEBUG] API响应数据:', JSON.stringify(response, null, 2));  // 格式化输出
 
         // 发送响应
         res.status(200).json(response);

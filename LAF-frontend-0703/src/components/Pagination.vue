@@ -1,7 +1,7 @@
 <template>
   <div class="pagination-container" v-if="totalPages > 1">
     <button @click="changePage(currentPage - 1)" :disabled="currentPage === 1">
-      < 上一页
+       上一页
     </button>
     
     <button 
@@ -14,7 +14,7 @@
     </button>
 
     <button @click="changePage(currentPage + 1)" :disabled="currentPage === totalPages">
-      下一页 >
+      下一页 
     </button>
   </div>
 </template>

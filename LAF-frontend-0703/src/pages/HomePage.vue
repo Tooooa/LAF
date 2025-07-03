@@ -61,7 +61,7 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
-import { getItemsList, intelligentSearch } from '@/api/items'; // 引入两个 API 函数
+import { getItemsList, getItems } from '@/api/items'; // 引入两个 API 函数
 import ItemCard from '@/components/ItemCard.vue'; // 引入你已有的 ItemCard 组件
 
 // -- 路由 --
@@ -84,8 +84,8 @@ const handleIntelligentSearch = async () => {
   }
   isSearching.value = true;
   try {
-    // 调用智能搜索API
-    const res = await intelligentSearch({ query: searchQuery.value });
+    // todo: 调用智能搜索API
+    const res = await getItems({ keyword: searchQuery.value });
     
     if (res.success && res.data.filters) {
       // 智能搜索API会返回提取的关键词和建议分类
