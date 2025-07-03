@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <!-- 使用PNG格式的图标 -->
+    <link rel="icon" type="image/png" href="/src/assets/logo.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>校园失物招领系统</title>
+    <style>
+      body {
+        margin: 0;
+        font-family: system-ui, -apple-system, sans-serif;
+        background-color: #f5f7fa;
+      }
+    </style>
+    <!-- 高德地图 JS API -->
+    <script type="text/javascript">
+      window._AMapSecurityConfig = {
+        // 替换成你的安全密钥
+        securityJsCode: '1c58048e093f41acdaecaa0c789ab971', 
+      };
+    </script>
+    <script type="text/javascript" 
+            src="https://webapi.amap.com/maps?v=2.0&key=793cbf0df0a209d8d3559164bb5543ce&plugin=AMap.Scale,AMap.ToolBar,AMap.HeatMap">
+    </script>
+  </head>
+  <body>
+    <div id="app"></div>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>

@@ -1,0 +1,178 @@
+{
+  "users": [
+    {
+      "id": 101,
+      "username": "zhangsan",
+      "phone": "13800138001",
+      "email": "zhangsan@example.com",
+      "password_hash": "hashed_password_abc",
+      "avatar": "https://i.pravatar.cc/150?u=zhangsan",
+      "status": "active",
+      "last_login_at": "2025-07-01T10:00:00Z",
+      "created_at": "2025-06-01T09:00:00Z",
+      "updated_at": "2025-07-01T10:00:00Z"
+    },
+    {
+      "id": 102,
+      "username": "lisi",
+      "phone": "13800138002",
+      "email": "lisi@example.com",
+      "password_hash": "hashed_password_def",
+      "avatar": "https://i.pravatar.cc/150?u=lisi",
+      "status": "active",
+      "last_login_at": "2025-07-02T08:30:00Z",
+      "created_at": "2025-06-05T11:20:00Z",
+      "updated_at": "2025-07-02T08:30:00Z"
+    }
+  ],
+  "categories": [
+    { "id": 1, "code": "electronics", "name": "电子产品", "parent_id": null, "sort_order": 1 },
+    { "id": 2, "code": "accessories", "name": "配饰用品", "parent_id": null, "sort_order": 2 },
+    { "id": 3, "code": "documents", "name": "证件文件", "parent_id": null, "sort_order": 3 },
+    { "id": 4, "code": "books", "name": "书籍文具", "parent_id": null, "sort_order": 4 },
+    { "id": 5, "code": "clothing", "name": "服装鞋帽", "parent_id": null, "sort_order": 5 },
+    { "id": 6, "code": "sports", "name": "运动用品", "parent_id": null, "sort_order": 6 },
+    { "id": 7, "code": "others", "name": "其他物品", "parent_id": null, "sort_order": 7 },
+    { "id": 8, "code": "phone", "name": "手机", "parent_id": 1, "sort_order": 1 },
+    { "id": 9, "code": "laptop", "name": "笔记本电脑", "parent_id": 1, "sort_order": 2 },
+    { "id": 10, "code": "headphones", "name": "耳机", "parent_id": 1, "sort_order": 4 },
+    { "id": 11, "code": "wallet", "name": "钱包", "parent_id": 2, "sort_order": 1 },
+    { "id": 12, "code": "key", "name": "钥匙", "parent_id": 3, "sort_order": 4 },
+    { "id": 13, "code": "student_card", "name": "学生证", "parent_id": 3, "sort_order": 2 }
+  ],
+  "locations": [
+    { "id": "library", "name": "图书馆", "full_name": "中央图书馆", "type": "building", "latitude": 39.9042, "longitude": 116.4074, "floors": "[\"1F\", \"2F\", \"3F\", \"4F\", \"5F\"]" },
+    { "id": "cafeteria", "name": "食堂", "full_name": "学生食堂", "type": "building", "latitude": 39.9035, "longitude": 116.4068, "floors": "[\"1F\", \"2F\", \"3F\"]" },
+    { "id": "dormitory", "name": "宿舍", "full_name": "学生宿舍区", "type": "area", "latitude": 39.9028, "longitude": 116.4081, "floors": null },
+    { "id": "teaching", "name": "教学楼", "full_name": "教学楼区域", "type": "area", "latitude": 39.9048, "longitude": 116.4062, "floors": null },
+    { "id": "gym", "name": "体育馆", "full_name": "综合体育馆", "type": "building", "latitude": 39.9021, "longitude": 116.4055, "floors": "[\"1F\", \"2F\"]" }
+  ],
+  "items": [
+    {
+      "id": 1001,
+      "type": "lost",
+      "title": "在图书馆丢失一个蓝色钱包",
+      "description": "昨天下午在图书馆三楼靠窗位置学习，走的时候忘记带走一个蓝色的皮质钱包，里面有身份证和几张银行卡，非常着急！",
+      "category_id": 11,
+      "location_id": "library",
+      "location_detail": "三楼A区阅览室，靠近窗户的座位",
+      "lost_date": "2025-06-28",
+      "contact_info": "13800138001",
+      "contact_type": "phone",
+      "latitude": 39.9042,
+      "longitude": 116.4074,
+      "status": "active",
+      "author_id": 101,
+      "view_count": 158,
+      "match_count": 3,
+      "is_top": false,
+      "created_at": "2025-06-29T11:00:00Z",
+      "updated_at": "2025-06-29T11:00:00Z"
+    },
+    {
+      "id": 1002,
+      "type": "found",
+      "title": "捡到一副苹果AirPods Pro耳机",
+      "description": "在去体育馆的路上捡到一副白色的AirPods Pro耳机，带白色保护壳。失主看到请联系我。",
+      "category_id": 10,
+      "location_id": "gym",
+      "location_detail": "通往体育馆的林荫路上",
+      "lost_date": "2025-06-30",
+      "contact_info": "lisi@example.com",
+      "contact_type": "email",
+      "latitude": 39.9021,
+      "longitude": 116.4055,
+      "status": "active",
+      "author_id": 102,
+      "view_count": 72,
+      "match_count": 1,
+      "is_top": false,
+      "created_at": "2025-06-30T14:20:00Z",
+      "updated_at": "2025-06-30T14:20:00Z"
+    },
+    {
+      "id": 1003,
+      "type": "lost",
+      "title": "我的学生证丢了",
+      "description": "学生证，姓名李四，学号20210088。可能掉在教学楼3号楼了，有捡到的同学麻烦联系一下。",
+      "category_id": 13,
+      "location_id": "teaching",
+      "location_detail": "教学楼3号楼 201教室附近",
+      "lost_date": "2025-07-01",
+      "contact_info": "13800138002",
+      "contact_type": "phone",
+      "latitude": 39.9048,
+      "longitude": 116.4062,
+      "status": "resolved",
+      "resolve_note": "已找回，感谢张同学！",
+      "resolved_at": "2025-07-02T10:00:00Z",
+      "author_id": 102,
+      "view_count": 45,
+      "match_count": 1,
+      "is_top": false,
+      "created_at": "2025-07-01T18:00:00Z",
+      "updated_at": "2025-07-02T10:00:00Z"
+    },
+    {
+      "id": 1004,
+      "type": "found",
+      "title": "食堂二楼捡到一把带龙猫挂件的钥匙",
+      "description": "中午在食堂二楼吃饭，在座位上发现一串钥匙，上面有一个龙猫的毛绒挂件。放在食堂失物招领处了。",
+      "category_id": 12,
+      "location_id": "cafeteria",
+      "location_detail": "食堂二楼12号桌",
+      "lost_date": "2025-07-02",
+      "contact_info": "食堂失物招领处",
+      "contact_type": "phone",
+      "latitude": 39.9035,
+      "longitude": 116.4068,
+      "status": "active",
+      "author_id": 101,
+      "view_count": 12,
+      "match_count": 0,
+      "is_top": false,
+      "created_at": "2025-07-02T12:30:00Z",
+      "updated_at": "2025-07-02T12:30:00Z"
+    }
+  ],
+  "item_images": [
+    { "id": 1, "item_id": 1001, "image_url": "https://placehold.co/600x400/3498db/ffffff?text=Lost+Wallet", "is_cover": true },
+    { "id": 2, "item_id": 1002, "image_url": "https://placehold.co/600x400/ecf0f1/000000?text=Found+AirPods", "is_cover": true },
+    { "id": 3, "item_id": 1003, "image_url": "https://placehold.co/600x400/2ecc71/ffffff?text=Student+Card", "is_cover": true },
+    { "id": 4, "item_id": 1004, "image_url": "https://placehold.co/600x400/95a5a6/ffffff?text=Found+Keys", "is_cover": true },
+    { "id": 5, "item_id": 1004, "image_url": "https://placehold.co/600x400/bdc3c7/ffffff?text=Key+Detail", "is_cover": false }
+  ],
+  "item_tags": [
+    { "id": 1, "item_id": 1001, "tag_name": "钱包" },
+    { "id": 2, "item_id": 1001, "tag_name": "蓝色" },
+    { "id": 3, "item_id": 1001, "tag_name": "图书馆" },
+    { "id": 4, "item_id": 1002, "tag_name": "耳机" },
+    { "id": 5, "item_id": 1002, "tag_name": "AirPods" },
+    { "id": 6, "item_id": 1004, "tag_name": "钥匙" },
+    { "id": 7, "item_id": 1004, "tag_name": "龙猫" }
+  ],
+  "notifications": [
+    {
+      "id": 1,
+      "user_id": 101,
+      "type": "match",
+      "title": "您的失物'在图书馆丢失一个蓝色钱包'有新的匹配建议",
+      "content": "系统发现一件高度相似的招领物品，请及时查看。",
+      "data": { "lost_item_id": 1001, "found_item_id": 1005 },
+      "status": "unread",
+      "created_at": "2025-07-02T15:00:00Z"
+    }
+  ],
+  "conversations": [
+    {
+      "id": 1,
+      "item_id": 1003,
+      "user1_id": 102,
+      "user2_id": 101,
+      "status": "archived",
+      "last_message_at": "2025-07-02T09:30:00Z",
+      "created_at": "2025-07-02T09:00:00Z",
+      "updated_at": "2025-07-02T09:30:00Z"
+    }
+  ]
+}
