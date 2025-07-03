@@ -14,6 +14,7 @@ const mapRoutes = require('./routes/map');
 const authRoutes = require('./routes/auth');
 const profileRoutes = require('./routes/profile');
 const parseRoutes = require('./routes/intelli-parse');
+const notiRoutes = require('./routes/notifications');
 const { errorHandler, notFound } = require('./middleware/errorMiddleware');
 
 const app = express();
@@ -46,6 +47,7 @@ app.use('/v1/map', mapRoutes);
 app.use('/v1/auth', authRoutes);
 app.use('/v1/profile', profileRoutes);
 app.use('/v1/intelli-parse', parseRoutes);
+app.use('/v1/notifications', notiRoutes);
 
 // 健康检查
 app.get('/health', (req, res) => {
