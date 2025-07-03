@@ -62,6 +62,7 @@
 import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { getItemsList, getItems } from '@/api/items'; // 引入两个 API 函数
+import { parseIntelligentQuery, fetchLatestItems } from '@/api/search';
 import ItemCard from '@/components/ItemCard.vue'; // 引入你已有的 ItemCard 组件
 
 // -- 路由 --
@@ -76,41 +77,60 @@ const isLoading = ref(true);
 
 // -- 方法 --
 
-// 智能搜索处理函数
-const handleIntelligentSearch = async () => {
-  if (!searchQuery.value.trim()) {
+/**
+ * 智能搜索处理函数
+ * 职责：调用智能解析API，然后带着解析结果跳转到列表页。
+ */
+ const handleIntelligentSearch = async () => {
+  const query = searchQuery.value.trim();
+  if (!query) {
     alert('请输入您想搜索的内容。');
     return;
   }
+
   isSearching.value = true;
   try {
-    // todo: 调用智能搜索API
-    const res = await getItems({ keyword: searchQuery.value });
-    
-    if (res.success && res.data.filters) {
-      // 智能搜索API会返回提取的关键词和建议分类
-      const { extractedKeywords, suggestedCategory } = res.data.filters;
+    // 步骤1: 调用新的智能解析API
+    const res = await parseIntelligentQuery({ query });
+
+    console.log('[DEBUG]: 智能解析', res);
+
+    // 步骤2: 根据解析结果构建查询参数并跳转
+    if (res && res.data && res.data.data.filters) {
+      const { extractedKeywords, suggestedCategory, suggestedLocation } = res.data.data.filters;
       
-      // 构建查询参数并跳转到物品列表页
       const queryParams = {};
+
+      console.log('[DEBUG]: 智能解析', extractedKeywords, suggestedCategory, suggestedLocation);
+
       if (extractedKeywords && extractedKeywords.length > 0) {
         queryParams.keyword = extractedKeywords.join(' ');
       }
       if (suggestedCategory) {
         queryParams.category = suggestedCategory;
       }
-      
-      router.push({ path: '/items', query: queryParams });
+      if (suggestedLocation) {
+        queryParams.location = suggestedLocation;
+      }
 
+      // 如果解析后什么都没有，就用原始查询作为关键词
+      if (Object.keys(queryParams).length === 0) {
+        queryParams.keyword = query;
+      }
+      
+      const destination = { path: '/items', query: queryParams };
+      console.log('HomePage: 即将跳转到 /items，携带的参数是:', destination.query);
+      router.push(destination);
     } else {
-      // 如果智能搜索失败或无结果，则进行普通关键词跳转
-      router.push({ path: '/items', query: { keyword: searchQuery.value } });
+      // 降级：如果智能解析API失败，则进行普通关键词跳转
+      console.warn('智能解析失败，降级为普通搜索。');
+      router.push({ path: '/items', query: { keyword: query } });
     }
   } catch (error) {
-    console.error('Intelligent search failed:', error);
+    console.error('智能搜索过程中发生错误:', error);
     alert('搜索时发生错误，将进行普通搜索。');
-    // 降级为普通搜索
-    router.push({ path: '/items', query: { keyword: searchQuery.value } });
+    // 降级：发生任何网络或服务器错误，都进行普通搜索
+    router.push({ path: '/items' });
   } finally {
     isSearching.value = false;
   }
