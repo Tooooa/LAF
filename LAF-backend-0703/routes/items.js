@@ -289,6 +289,8 @@ async function getItemsList(req, res) {
         locationId // 按地点ID筛选
     } = req.query;
 
+    console.log('[DEBUG] keywords: ', keyword);
+
     const pageNum = parseInt(page, 10);
     const limitNum = parseInt(limit, 10);
     const offset = (pageNum - 1) * limitNum;
@@ -336,9 +338,30 @@ async function getItemsList(req, res) {
         }
 
         // 关键字搜索 (title 和 description)
-        if (keyword) {
-            whereClauses.push("(i.title LIKE @searchQuery OR i.description LIKE @searchQuery)");
-            request.input('searchQuery', sql.NVarChar, `%${keyword}%`);
+        if (keyword && typeof keyword === 'string') {
+            // 1. 将关键词字符串按一个或多个空格分割成数组，并过滤掉空字符串
+            const keywords = keyword.split(/\s+/).filter(kw => kw.length > 0);
+        
+            if (keywords.length > 0) {
+                // 2. 为每个关键词创建一个 OR 子句
+                // 例如，对于 ['耳机', '图书馆']，会生成:
+                // (i.title LIKE '%耳机%' OR i.description LIKE '%耳机%')
+                // OR
+                // (i.title LIKE '%图书馆%' OR i.description LIKE '%图书馆%')
+                const keywordConditions = keywords.map((kw, index) => {
+                    const paramName = `searchQuery${index}`; // 为每个关键词创建唯一的参数名，如 searchQuery0, searchQuery1
+                    // 绑定参数，防止SQL注入
+                    request.input(paramName, sql.NVarChar, `%${kw}%`);
+                    // 返回针对单个关键词的查询条件
+                    return `(i.title LIKE @${paramName} OR i.description LIKE @${paramName})`;
+                });
+        
+                // 3. 将所有关键词的条件用 'OR' 连接起来，并用括号包裹，形成一个大的查询块
+                // 最终效果: ((i.title LIKE ... OR ...) OR (i.title LIKE ... OR ...))
+                if (keywordConditions.length > 0) {
+                    whereClauses.push(`(${keywordConditions.join(' OR ')})`);
+                }
+            }
         }
 
         if (authorId) {

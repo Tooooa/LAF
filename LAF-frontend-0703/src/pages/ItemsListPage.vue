@@ -22,23 +22,25 @@
       </div>
       <div v-else class="empty-state">没有找到相关物品。</div>
       
-      <!-- 分页导航栏 -->
+      <!-- 分页导航栏
       <Pagination
         :current-page="pagination.currentPage"
         :total-pages="pagination.totalPages"
         @page-change="handlePageChange"
-      />
+      /> -->
     </template>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, reactive } from 'vue';
+import { ref, reactive, onMounted, watch } from 'vue';
+import { useRoute, useRouter } from 'vue-router'; // <-- 新增 useRouter
 import ItemCard from '@/components/ItemCard.vue';
 import Pagination from '@/components/Pagination.vue';
 import FilterBar from '@/components/FilterBar.vue';
 import { getItems } from '@/api/items.js';
 
+// --- 状态定义 ---
 const items = ref([]);
 const loading = ref(true);
 const error = ref(null);
@@ -50,70 +52,96 @@ const pagination = reactive({
   pageSize: 8,
 });
 
-// 2. 创建一个 ref 来存储当前的筛选条件
-const currentFilters = ref({});
+const route = useRoute();
+const router = useRouter(); // <-- 新增 router 实例，用于更新URL
 
-// 获取物品列表数据的核心函数
+// --- 统一的数据获取函数 ---
+// 这个函数现在是唯一的入口点，它总是从 URL (route.query) 获取参数
 async function fetchItems() {
   loading.value = true;
   error.value = null;
+  
   try {
+    // 直接从 route.query 构建请求参数，这是我们统一的数据源
     const params = {
-      page: pagination.currentPage,
-      // limit: pagination.pageSize,
-      ...currentFilters.value
+      // 确保分页信息也从URL或默认值中获取
+      page: route.query.page || 1, 
+      limit: pagination.pageSize,
+      ...route.query // 将URL中所有其他参数（keyword, category等）都包含进来
     };
     
-    // 清理空参数
-    Object.keys(params).forEach(key => {
-      if (params[key] === '' || params[key] === null || params[key] === undefined) {
-        delete params[key];
-      }
-    });
-
+    console.log('[DEBUG] 正在使用以下参数请求数据:', params);
     const response = await getItems(params);
 
-    // console.log("[DEBUG]: ", response);
-    
-    // todo: 检测空数据
-    if (!response || response.length === 0) {
-      console.log('[WARNING] 后台数据库没有搜索到数据，为空');
-      items.value = [];
-      pagination.totalItems = response.pagination?.totalItems || 0;
-      pagination.totalPages = response.pagination?.totalPages || 0;
-      return;
+    // --- 健壮的响应处理 ---
+    // 假设后端返回标准格式: { success: true, data: [...], pagination: {...} }
+    if (response && response) {
+      items.value = response || [];
+      // 更新分页信息
+      const p = response.pagination;
+      pagination.currentPage = p?.page || 1;
+      pagination.totalItems = p?.totalItems || 0;
+      pagination.totalPages = p?.totalPages || 1;
+    } else {
+      // 处理后端返回 {success: false} 或其他非预期格式
+      throw new Error(response.message || '获取数据失败');
     }
-    console.log('[DEBUG]: return value, ', response);
-    items.value = response; 
-    
-    pagination.totalItems = response.length || 0;
-    pagination.totalPages = Math.ceil(pagination.totalItems / pagination.pageSize) || 1;
+
   } catch (err) {
     console.error('获取物品列表失败:', err);
     error.value = err.message || '未知错误';
+    // 发生错误时清空数据
+    items.value = [];
+    pagination.totalItems = 0;
+    pagination.totalPages = 1;
   } finally {
     loading.value = false;
   }
 }
 
-// 4. 新增的事件处理函数，用于处理来自 FilterBar 的事件
+// --- 事件处理函数 (现在只负责更新URL) ---
+
+// 处理来自 FilterBar 的筛选事件
 function handleFilterChange(newFilters) {
-  // 更新当前筛选条件
-  currentFilters.value = newFilters;
-  // **重要**：当应用新的筛选时，应该将页码重置为 1
-  pagination.currentPage = 1;
-  // 使用新的筛选条件重新获取数据
-  fetchItems();
+  console.log('[DEBUG] FilterBar 触发变更:', newFilters);
+  // 合并现有URL参数和新筛选条件，并将页码重置为1
+  const query = {
+    ...route.query,
+    ...newFilters,
+    page: 1, // 应用新筛选时，必须返回第一页
+  };
+
+  // 使用 router.push 更新 URL。这将自动触发下面的 watch
+  router.push({ query });
 }
 
+// 处理来自 Pagination 的分页事件
 function handlePageChange(newPage) {
-  pagination.currentPage = newPage;
-  fetchItems();
+  console.log('[DEBUG] Pagination 触发变更，新页码:', newPage);
+  // 合并现有URL参数和新页码
+  const query = {
+    ...route.query,
+    page: newPage,
+  };
+  
+  // 使用 router.push 更新 URL，同样会自动触发 watch
+  router.push({ query });
 }
 
-onMounted(() => {
-  fetchItems();
-});
+// --- 核心监听器 (替换了所有旧的调用逻辑) ---
+// 这个 watch 现在是驱动所有数据获取的“引擎”
+watch(
+  () => route.query,
+  (newQuery, oldQuery) => {
+    // 这里的 console 可以在调试时看到URL参数的变化
+    console.log('[DEBUG] URL query 发生变化，准备重新获取数据:', newQuery);
+    fetchItems();
+  },
+  {
+    immediate: true, // <-- 关键！让 watch 在组件加载时立即执行一次
+    deep: true // 深度监听，确保所有参数变化都能被捕获
+  }
+);
 </script>
 
 <style scoped>
