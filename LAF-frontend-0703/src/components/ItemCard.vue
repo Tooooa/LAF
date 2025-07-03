@@ -1,26 +1,37 @@
 <template>
-  <div class="item-card">
-    <div class="card-image-wrapper">
-      <img :src="imageUrl" @error="onImageError" alt="物品图片" class="card-image" />
-      <!-- 类型标签：寻 / 招 -->
-      <span class="card-type-label" :class="typeClass">{{ typeText }}</span>
+  <router-link 
+    :to="{ name: 'ItemDetail', params: { id: itemData.id } }" 
+    class="item-card-link"
+  >
+    <div class="item-card">
+      <div class="card-image-wrapper">
+        <img 
+          :src="imageUrl" 
+          @error="onImageError" 
+          alt="物品图片" 
+          class="card-image" 
+        />
+        <!-- 类型标签：寻 / 招 -->
+        <span class="card-type-label" :class="typeClass">{{ typeText }}</span>
+      </div>
+      
+      <div class="card-content">
+        <h3 class="card-title">{{ itemData.title }}</h3>
+        <p class="card-info">
+          <span class="info-icon">📍</span>
+          <span>{{ itemData.location || '未知地点' }}</span>
+        </p>
+        <p class="card-info">
+          <span class="info-icon">📅</span>
+          <span>{{ itemData.lostDate }}</span>
+        </p>
+      </div>
+      
+      <div class="card-footer">
+        <StatusBadge :status="itemData.status" />
+      </div>
     </div>
-    <div class="card-content">
-      <h3 class="card-title">{{ itemData.title }}</h3>
-      <p class="card-info">
-        <span class="info-icon">📍</span>
-        <span>{{ itemData.location }}</span>
-      </p>
-      <p class="card-info">
-        <span class="info-icon">📅</span>
-        <span>{{ itemData.date }}</span>
-      </p>
-    </div>
-    <div class="card-footer">
-      <!-- 状态徽章 -->
-      <StatusBadge :status="itemData.status" />
-    </div>
-  </div>
+  </router-link>
 </template>
 
 <script setup>
