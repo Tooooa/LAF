@@ -80,7 +80,7 @@
 
 <script setup>
 import { ref, onMounted, computed } from 'vue';
-import { useRoute } from 'vue-router'; // 引入 useRoute 来访问路由信息
+import { useRoute, useRouter } from 'vue-router'; // 引入 useRoute 来访问路由信息
 import { getItemById } from '@/api/items.js';
 import StatusBadge from '@/components/StatusBadge.vue'; // 复用状态徽章组件
 import defaultImage from '@/assets/default-image.png'; // 引入默认图片
@@ -96,7 +96,7 @@ const error = ref(null);
 const item = ref(null);
 const isLoading = ref(true); // 用于显示加载状态
 // 从路由参数中获取 itemId
-const itemId = route.params.itemId;
+const itemId = route.params.id;
 
 // -- Computed 属性 --
 // 判断当前登录用户是否是物品发布者
@@ -151,20 +151,14 @@ async function fetchItemDetail() {
   loading.value = true;
   error.value = null;
   try {
-    const response = await getItemById(itemId);
-    
-    // 修改点1：正确处理数组响应
-    if (response.data && response.data.length > 0) {
-      item.value = response.data[0]; // 取第一个物品
-      
-      // 修改点2：确保图片数据存在
-      if (item.value.images && item.value.images.length > 0) {
-        mainImage.value = item.value.images[0];
-      }
+    const res = await getItemById(itemId);
+    console.log('[DEBUG]: id search, result: ', res);
+    if (Array.isArray(res) && res.length > 0) {
+      item.value = res[0];
     } else {
       error.value = '未找到该物品';
-    }
-    
+      router.push('/items');
+    } 
   } catch (err) {
     console.error(`获取ID为 ${itemId} 的物品失败:`, err);
     error.value = err.response?.data?.message || err.message || '无法连接到服务器';
@@ -174,24 +168,10 @@ async function fetchItemDetail() {
 }
 
 // -- 生命周期钩子 --
-onMounted(async () => {
-  const itemId = route.params.id;
-  try {
-    const res = await getItemById(itemId);
-    if (res.success) {
-      item.value = res.data;
-    } else {
-      // 处理获取失败的情况，比如跳转到404页面
-      alert('无法加载物品信息，可能已被删除。');
-      router.push('/');
-    }
-  } catch (error) {
-    console.error('Fetch item detail error:', error);
-    alert('网络错误，请稍后重试。');
-  } finally {
-    isLoading.value = false;
-  }
+onMounted(() => {
+  fetchItemDetail();
 });
+
 </script>
 
 <style scoped>

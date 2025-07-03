@@ -20,7 +20,7 @@ export function getItems(params) {
  */
 export function getItemById(itemId) {
   return request({
-    url: `/items/${itemId}`, // 使用模板字符串拼接ID到URL中
+    url: `/items/?id=${itemId}`, // 使用模板字符串拼接ID到URL中
     method: 'get',
   });
 }

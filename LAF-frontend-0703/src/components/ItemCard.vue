@@ -23,7 +23,7 @@
         </p>
         <p class="card-info">
           <span class="info-icon">📅</span>
-          <span>{{ itemData.lostDate }}</span>
+          <span>{{ formattedDate }}</span>
         </p>
       </div>
       
@@ -37,6 +37,7 @@
 <script setup>
 import { computed } from 'vue';
 import StatusBadge from './StatusBadge.vue';
+import { formatDateSimple } from '@/utils/date';
 import defaultImage from '@/assets/default-image.png'; // 确保你的项目中有名为 default-image.png 的默认图片
 
 // 接收一个完整的物品对象作为 prop
@@ -45,6 +46,11 @@ const props = defineProps({
     type: Object,
     required: true,
   },
+});
+
+// 计算属性：格式化日期
+const formattedDate = computed(() => {
+  return formatDateSimple(props.itemData.lostDate); // 使用 lostDate
 });
 
 // 计算图片 URL，如果 itemData 中没有图片，则使用默认图片
