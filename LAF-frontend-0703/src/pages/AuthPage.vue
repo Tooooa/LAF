@@ -88,7 +88,7 @@ const registerForm = ref({
 const handleLogin = async () => {
   try {
     const response = await login(loginForm.value);
-    console.log('[DE]: response: ', response);
+
     if (response.code == 200) {
       // 调用 Pinia store 中的 action 保存用户信息
       userStore.loginSuccess({

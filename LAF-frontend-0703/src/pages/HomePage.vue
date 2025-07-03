@@ -30,7 +30,11 @@
         <div v-if="isLoading" class="loading-state">正在加载...</div>
         <div v-else-if="lostItems.length === 0" class="empty-state">暂无寻物信息</div>
         <div v-else class="items-grid">
-          <ItemCard v-for="item in lostItems" :key="item.id" :item="item" />
+          <ItemCard 
+              v-for="item in lostItems" 
+              :key="item.id" 
+              :item-data="item"
+            />
         </div>
       </div>
 
@@ -43,7 +47,11 @@
         <div v-if="isLoading" class="loading-state">正在加载...</div>
         <div v-else-if="foundItems.length === 0" class="empty-state">暂无招领信息</div>
         <div v-else class="items-grid">
-          <ItemCard v-for="item in foundItems" :key="item.id" :item="item" />
+          <ItemCard 
+              v-for="item in foundItems" 
+              :key="item.id" 
+              :item-data="item"
+            />
         </div>
       </div>
     </main>
@@ -118,14 +126,12 @@ const fetchHomeData = async () => {
       getItemsList({ type: 'found', pageSize: 6, sortBy: 'createdAt', sortOrder: 'desc' })
     ]);
 
-    console.log('[DEBUG]: home_page lost response: ', lostRes);
-    if (lostRes.success) {
-      lostItems.value = lostRes;
-    }
-    console.log('[DEBUG]: home_page found response: ', foundRes);
-    if (foundRes.success) {
-      foundItems.value = foundRes;
-    }
+    // console.log('[DEBUG]: home_page lost response: ', lostRes);
+    lostItems.value = lostRes;
+
+    // console.log('[DEBUG]: home_page found response: ', foundRes);
+    foundItems.value = foundRes;
+
   } catch (error) {
     console.error("Failed to fetch home data:", error);
     alert('加载首页数据失败，请稍后刷新重试。');

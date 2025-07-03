@@ -70,8 +70,6 @@ async function fetchItems() {
       }
     });
 
-    console.log('[DE]: params: ', params);
-
     const response = await getItems(params);
 
     console.log(response);

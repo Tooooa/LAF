@@ -2,7 +2,7 @@
   <div class="page-container">
     <!-- 返回按钮 -->
     <div class="back-link-wrapper">
-      <router-link to="/items" class="back-link">< 返回列表</router-link>
+      <router-link to="/items" class="back-link">返回列表</router-link>
     </div>
 
     <!-- 加载状态 -->
