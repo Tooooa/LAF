@@ -22,9 +22,13 @@ router.get('/suggestions',
   validateRequest(suggestionsSchema, 'query'),
   asyncHandler(async (req, res) => {
     const { query, type, limit } = req.query;
-    
-    const suggestions = await Location.getSuggestions(query, type, parseInt(limit));
-    
+    // ======================= 最终修复 =========================
+    // 无论 limit 是字符串 '10' 还是 undefined，这行代码都能确保得到一个整数。
+    // parseInt('10') -> 10
+    // parseInt(undefined) -> NaN,  NaN || 20 -> 20
+    const finalLimit = parseInt(limit, 10) || 20;
+    // ==========================================================
+    const suggestions = await Location.getSuggestions(query, type, finalLimit); 
     res.json({
       success: true,
       code: 200,
@@ -98,7 +102,7 @@ router.get('/:id/children',
   asyncHandler(async (req, res) => {
     const { id } = req.params;
     const { limit } = req.query;
-    
+    const finalLimit = parseInt(limit, 10) || 50;
     // 验证父级地点是否存在
     const parentLocation = await Location.getById(id);
     if (!parentLocation) {
@@ -110,7 +114,7 @@ router.get('/:id/children',
       });
     }
     
-    const children = await Location.getChildren(id, parseInt(limit));
+    const children = await Location.getChildren(id, finalLimit);
     
     res.json({
       success: true,

@@ -7,6 +7,11 @@ const { validateBounds } = require('../middleware/validation');
  * GET /map/items
  */
 exports.getMapItems = async (req, res) => {
+     // --- START: 调试日志 ---
+    console.log('\n--- [MAP API] /map/items request received ---');
+    // console.log(`[${new Date().toISOString()}]`);
+    console.log('1. Received query parameters:', req.query);
+    // --- END: 调试日志 ---
     try {
         const {
             bounds,          // 地图边界 "minLng,minLat,maxLng,maxLat"
@@ -36,7 +41,11 @@ exports.getMapItems = async (req, res) => {
 
         // 构建边界多边形的WKT格式
         const boundaryWKT = `POLYGON((${minLng} ${minLat}, ${maxLng} ${minLat}, ${maxLng} ${maxLat}, ${minLng} ${maxLat}, ${minLng} ${minLat}))`;
-
+        // --- START: 调试日志 ---
+        console.log('2. Parsed bounds and generated WKT:', {
+            minLng, minLat, maxLng, maxLat, boundaryWKT
+        });
+        // --- END: 调试日志 ---
         // 构建查询条件
         let whereConditions = ['i.coordinate.STIntersects(geography::STGeomFromText(@boundaryWKT, 4326)) = 1'];
         let parameters = [
@@ -146,11 +155,25 @@ exports.getMapItems = async (req, res) => {
             FROM GridData
             ORDER BY item_count DESC
         `;
+        // --- START: 调试日志 ---
+        console.log('3. Final constructed WHERE clause:', whereClause);
+        console.log('4. Final parameters for query:', parameters);
+        // 为了调试，我们可以把完整的SQL打印出来，手动替换参数
+        // let debugQuery = itemsQuery;
+        // parameters.forEach(p => {
+        //     const value = typeof p.value === 'string' ? `'${p.value}'` : p.value;
+        //     debugQuery = debugQuery.replace(new RegExp(`@${p.name}`, 'g'), value);
+        // });
+        console.log('5. DEBUG: Full items query (approximated):');
+        // console.log(debugQuery);
+        // --- END: 调试日志 ---
 
         // 执行查询
         const pool = await sql.connect();
         const request = pool.request();
-
+        // --- START: 调试日志 ---
+        console.log('6. Executing items query...');
+        // --- END: 调试日志 ---
         // 添加参数
         parameters.forEach(param => {
             request.input(param.name, param.type, param.value);
@@ -158,6 +181,9 @@ exports.getMapItems = async (req, res) => {
 
         // 执行物品查询
         const itemsResult = await request.query(itemsQuery);
+        // --- START: 调试日志 ---
+        console.log(`7. Items query finished. Found ${itemsResult.recordset.length} records.`);
+        // --- END: 调试日志 ---
         
         // 重新创建请求对象执行热力图查询
         const heatmapRequest = pool.request();
