@@ -70,7 +70,7 @@ async function fetchItems() {
       ...route.query // 将URL中所有其他参数（keyword, category等）都包含进来
     };
     
-    console.log('[DEBUG] 正在使用以下参数请求数据:', params);
+    // console.log('[DEBUG] 正在使用以下参数请求数据:', params);
     const response = await getItems(params);
 
     // --- 健壮的响应处理 ---
@@ -103,7 +103,7 @@ async function fetchItems() {
 
 // 处理来自 FilterBar 的筛选事件
 function handleFilterChange(newFilters) {
-  console.log('[DEBUG] FilterBar 触发变更:', newFilters);
+  // console.log('[DEBUG] FilterBar 触发变更:', newFilters);
   // 合并现有URL参数和新筛选条件，并将页码重置为1
   const query = {
     ...route.query,
@@ -134,7 +134,7 @@ watch(
   () => route.query,
   (newQuery, oldQuery) => {
     // 这里的 console 可以在调试时看到URL参数的变化
-    console.log('[DEBUG] URL query 发生变化，准备重新获取数据:', newQuery);
+    // console.log('[DEBUG] URL query 发生变化，准备重新获取数据:', newQuery);
     fetchItems();
   },
   {

@@ -89,7 +89,7 @@ const handleLogin = async () => {
   try {
     const response = await login(loginForm.value);
 
-    console.log('[DEBUG]: ', response);
+    // console.log('[DEBUG]: ', response);
 
     if (response.code == 200) {
       // 调用 Pinia store 中的 action 保存用户信息
@@ -120,9 +120,9 @@ const handleRegister = async () => {
   }
   
   try {
-    console.log('[Debug]: ', registerForm);
+    // console.log('[Debug]: ', registerForm);
     const response = await register(registerForm.value);
-    console.log('[Debug]: ', response);
+    // console.log('[Debug]: ', response);
     if (response) {
       alert('注册成功，请登录！');
       // 注册成功后切换到登录Tab，并清空注册表单

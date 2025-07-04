@@ -183,10 +183,14 @@ const startConversation = async () => {
 
   try {
     // 1. 先检查是否已存在这个对话
+    console.log('[ITEM]: ', item.value.author.id);
     await messageStore.fetchConversations(); // 确保对话列表是新的
     const existingConv = messageStore.conversations.find(c => 
-      c.item.id === item.value.id && c.participant.id === item.value.author.id
+      c.itemId === item.value.id && c.participantId === item.value.author.id
     );
+
+    // console.log('[DEBUG]: (1)existing: ', existingConv);
+    // console.log('[DEBUG]: (2)convs: ', messageStore.conversations);
 
     if (existingConv) {
       // 2. 如果存在，直接跳转到该对话
@@ -198,13 +202,17 @@ const startConversation = async () => {
         itemId: item.value.id,
         content: `你好，我对你发布的 "${item.value.title}" 很感兴趣。`
       };
+      // console.log('[DEBUG]: (3)mes data: ', messageData);
       
       const newConversation = await messageStore.sendNewMessage(messageData);
+
+      // console.log('[DEBUG]: (4)message: ', newConversation);
       
       if (newConversation) {
           // 再次获取最新对话列表以找到新创建的对话ID
           await messageStore.fetchConversations(); 
-          const conv = messageStore.conversations.find(c => c.item.id === item.value.id && c.participant.id === item.value.author.id);
+          const conv = messageStore.conversations.find(c.itemId === item.value.id && c.participantId === item.value.author.id);
+          console.log('[new message]: ', conv);
           if (conv) {
               router.push(`/messages/${conv.id}`);
           } else {

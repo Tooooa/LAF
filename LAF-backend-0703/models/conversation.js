@@ -10,30 +10,42 @@ class Conversation {
    * @returns {Promise<Object>} 对话对象
    */
   static async findOrCreate(itemId, user1Id, user2Id) {
-    // 保证 user1_id 总是较小的那个
     const participant1 = Math.min(user1Id, user2Id);
     const participant2 = Math.max(user1Id, user2Id);
 
-    const pool = await database.connect();
-    // 尝试使用 MERGE 语句（SQL Server 2008+），它能在一个原子操作中完成“查找或创建”
-    const query = `
-      MERGE INTO conversations WITH (HOLDLOCK) AS target
-      USING (SELECT @itemId AS item_id, @p1 AS p1, @p2 AS p2) AS source
-      ON (target.item_id = source.item_id AND target.user1_id = source.p1 AND target.user2_id = source.p2)
-      WHEN NOT MATCHED THEN
-        INSERT (item_id, user1_id, user2_id)
-        VALUES (source.item_id, source.p1, source.p2)
-      OUTPUT inserted.*;
+    const pool = await database.connect(); // 假设 database.connect() 已修复
+
+    // 步骤 1: 先尝试查找
+    const findQuery = `
+      SELECT * FROM conversations 
+      WHERE item_id = @itemId AND user1_id = @p1 AND user2_id = @p2;
     `;
-    
-    const result = await pool.request()
+    let result = await pool.request()
       .input('itemId', sql.BigInt, itemId)
       .input('p1', sql.BigInt, participant1)
       .input('p2', sql.BigInt, participant2)
-      .query(query);
+      .query(findQuery);
 
+    // 如果找到了，直接返回
+    if (result.recordset.length > 0) {
+      return result.recordset[0];
+    }
+
+    // 步骤 2: 如果没找到，再插入
+    const insertQuery = `
+      INSERT INTO conversations (item_id, user1_id, user2_id)
+      OUTPUT inserted.*  -- 使用 OUTPUT 来直接返回插入的行
+      VALUES (@itemId, @p1, @p2);
+    `;
+    result = await pool.request()
+      .input('itemId', sql.BigInt, itemId)
+      .input('p1', sql.BigInt, participant1)
+      .input('p2', sql.BigInt, participant2)
+      .query(insertQuery);
+
+    // 返回新创建的行
     return result.recordset[0];
-  }
+}
 
   /**
    * 更新对话的最后一条消息信息

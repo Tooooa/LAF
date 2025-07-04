@@ -70,9 +70,9 @@ const fetchNotifications = async () => {
   loading.value = true;
   error.value = null;
   try {
-    console.log('[DEBUG]: userId: ', currentUserId);
+    // console.log('[DEBUG]: userId: ', currentUserId);
     const res = await getNotifications({ userId: currentUserId });
-    console.log('[DEBUG]: notis response: ', res);
+    // console.log('[DEBUG]: notis response: ', res);
     if (res) {
       notifications.value = res;
     } else {

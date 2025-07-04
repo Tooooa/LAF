@@ -158,7 +158,7 @@ const handleSubmit = async () => {
       res = await createItem(formData.value);
     }
 
-    console.log('[DEBUG]: ', res);
+    // console.log('[DEBUG]: ', res);
     if (res.code == 201) {
       alert(isEditMode.value ? '更新成功！' : '发布成功！');
       // 跳转到物品详情页

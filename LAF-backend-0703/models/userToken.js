@@ -24,7 +24,7 @@ async function connect() {
 
 // 创建新的 UserToken
 async function createUserToken(user_id, token_type, token_hash, expires_at) {
-  const pool = await database.connect();
+  const pool = await connect();
   const result = await pool.request()
     .input('user_id', sql.BigInt, user_id)
     .input('token_type', sql.NVarChar, token_type)

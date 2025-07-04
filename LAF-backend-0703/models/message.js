@@ -47,7 +47,6 @@ class Message {
         m.id,
         m.content,
         m.message_type AS messageType,
-        m.is_read AS isRead,
         m.created_at AS createdAt,
         from_u.id AS fromUserId,
         from_u.username AS fromUsername,

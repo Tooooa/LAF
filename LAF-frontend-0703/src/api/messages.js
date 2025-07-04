@@ -2,6 +2,7 @@ import request from '../utils/request';
 
 // 8.1 发送私信
 export function sendMessage(data) {
+  console.log('在sendMessage中', data);
   return request({
     url: '/messages',
     method: 'post',
