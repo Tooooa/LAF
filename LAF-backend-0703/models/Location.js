@@ -4,6 +4,11 @@ const sql = require('mssql');
 class Location {
   // 获取地点建议（自动补全）
   static async getSuggestions(query, type = 'all', limit = 20) {
+        // ======================= 在这里添加诊断日志 =======================
+    console.log(`[DEBUG] In Location.getSuggestions method:`);
+    console.log(`  - Received limit parameter:`, limit);
+    console.log(`  - Type of limit:`, typeof limit);
+    // ===============================================================
     try {
       let whereClause = 'WHERE is_active = 1';
       const params = { limit };
