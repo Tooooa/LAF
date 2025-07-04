@@ -15,6 +15,7 @@ const authRoutes = require('./routes/auth');
 const profileRoutes = require('./routes/profile');
 const parseRoutes = require('./routes/intelli-parse');
 const notiRoutes = require('./routes/notifications');
+const uploadRoutes = require('./routes/upload');
 const { errorHandler, notFound } = require('./middleware/errorMiddleware');
 
 const app = express();
@@ -24,13 +25,19 @@ const app = express();
 // 1. 配置CORS，允许你的前端访问
 //    这必须是所有路由之前的第一个或前几个中间件！
 app.use(cors({
-  origin: 'http://localhost:5173' // 精确指定允许的来源
+  origin: 'http://localhost:5173', // 精确指定允许的来源
+  methods: "GET,HEAD,PUT,PATCH,POST,DELETE"
 }));
 
 // 2. 其他安全和解析中间件
-app.use(helmet());
+// app.use(helmet());
+app.use(helmet({
+  crossOriginResourcePolicy: false,
+}));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
+
+app.use(express.static(path.join(__dirname, 'public')));
 
 // 3. 速率限制
 const limiter = rateLimit({
@@ -48,6 +55,8 @@ app.use('/v1/auth', authRoutes);
 app.use('/v1/profile', profileRoutes);
 app.use('/v1/intelli-parse', parseRoutes);
 app.use('/v1/notifications', notiRoutes);
+app.use('/v1/upload', uploadRoutes);
+
 
 // 健康检查
 app.get('/health', (req, res) => {
