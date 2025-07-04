@@ -104,6 +104,8 @@ const isOwner = computed(() => {
   return String(userStore.user.id) === String(item.value.author.id);
 });
 
+const backendUrl = import.meta.env.VITE_API_BASE_URL_NO_VER;
+
 // 计算主图URL
 const mainImage = computed(() => {
   if (item.value && item.value.imageUrls && item.value.imageUrls.length > 0) {

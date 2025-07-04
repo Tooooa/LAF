@@ -25,7 +25,7 @@
 <script setup>
 import { ref, watch } from 'vue';
 import { uploadImage } from '@/api/upload.js';
-
+ 
 const props = defineProps({
   modelValue: { // 使用 v-model 接收和发送图片 URL 列表
     type: Array,
@@ -61,14 +61,16 @@ const handleFileChange = async (event) => {
 
   const localUrl = URL.createObjectURL(file);
   const imageIndex = previewUrls.value.length;
+
+  const backendUrl = import.meta.env.VITE_API_BASE_URL_NO_VER;
   
   previewUrls.value.push({ url: localUrl, uploading: true });
 
   try {
     const res = await uploadImage(file);
-    if (res.success) {
+    if (res) {
       // 上传成功后，用服务器返回的 URL 替换本地 URL
-      previewUrls.value[imageIndex] = { url: res.data.url, uploading: false };
+      previewUrls.value[imageIndex] = { url: backendUrl+res.url, uploading: false };
       
       // 更新 v-model
       const finalUrls = previewUrls.value.map(img => img.url);

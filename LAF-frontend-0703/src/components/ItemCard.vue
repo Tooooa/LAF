@@ -48,6 +48,8 @@ const props = defineProps({
   },
 });
 
+const backendUrl = import.meta.env.VITE_API_BASE_URL_NO_VER;
+
 // 计算属性：格式化日期
 const formattedDate = computed(() => {
   return formatDateSimple(props.itemData.lostDate); // 使用 lostDate
@@ -55,8 +57,13 @@ const formattedDate = computed(() => {
 
 // 计算图片 URL，如果 itemData 中没有图片，则使用默认图片
 const imageUrl = computed(() => {
-  return props.itemData.imageUrl || defaultImage;
+  if (props.itemData.images[0])
+    return backendUrl + props.itemData.images[0];
+  else
+    return defaultImage;
 });
+
+console.log('Image url: ', imageUrl);
 
 // 处理图片加载失败的事件，强制显示默认图片
 const onImageError = (event) => {
