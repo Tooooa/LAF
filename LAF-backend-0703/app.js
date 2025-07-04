@@ -16,6 +16,7 @@ const profileRoutes = require('./routes/profile');
 const parseRoutes = require('./routes/intelli-parse');
 const notiRoutes = require('./routes/notifications');
 const { errorHandler, notFound } = require('./middleware/errorMiddleware');
+const messageRoutes = require('./routes/messages');
 
 const app = express();
 
@@ -48,6 +49,7 @@ app.use('/v1/auth', authRoutes);
 app.use('/v1/profile', profileRoutes);
 app.use('/v1/intelli-parse', parseRoutes);
 app.use('/v1/notifications', notiRoutes);
+app.use('/v1/messages', messageRoutes); 
 
 // 健康检查
 app.get('/health', (req, res) => {
