@@ -8,8 +8,13 @@
 
       <div class="nav-links">
         <router-link to="/items" class="nav-link">物品广场</router-link>
-        <!-- <router-link to="/items?type=found" class="nav-link">招领广场</router-link> -->
         <router-link to="/map" class="nav-link">地图模式</router-link>
+        <router-link v-if="isLoggedIn" to="/messages" class="nav-link">
+          消息
+          <span v-if="messageStore.unreadCount > 0" class="unread-count">
+            {{ messageStore.unreadCount }}
+          </span>
+        </router-link>
       </div>
     </div>
 
@@ -39,18 +44,18 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'; // 【修改】导入 watch
 import { useRouter } from 'vue-router';
 import { useUserStore } from '@/store/user';
-// 温馨提示: 请确保在 @/assets/ 目录下有一个用作默认头像的图片文件
+import { useMessageStore } from '@/store/messages'; // 【新增】引入 Message Store
 import defaultAvatar from '@/assets/default-image.png';
 
 const router = useRouter();
 const userStore = useUserStore();
+const messageStore = useMessageStore(); // 【新增】初始化 Message Store
 
 const isMenuVisible = ref(false);
 
-// 从 Pinia Store 获取登录状态和用户信息 (已使用 userStore.user)
 const isLoggedIn = computed(() => userStore.isLoggedIn);
 const username = computed(() => userStore.user?.username || '用户');
 const userAvatar = computed(() => userStore.user?.avatar || defaultAvatar);
@@ -59,26 +64,42 @@ const toggleMenu = () => {
   isMenuVisible.value = !isMenuVisible.value;
 };
 
-// 跳转逻辑 (已使用您指定的命名路由)
 const goToLogin = () => {
   router.push({ name: 'Auth' });
 };
 
 const handleLogout = () => {
   userStore.logout();
-  isMenuVisible.value = false; // 关闭菜单
-  router.push({ name: 'Home' }); // 跳转到首页
+  messageStore.clearMessages(); // 【新增】退出登录时清空消息数据
+  isMenuVisible.value = false;
+  router.push({ name: 'Home' });
 };
 
-// 点击菜单外部，自动关闭菜单的逻辑
 const handleClickOutside = (event) => {
     if (isMenuVisible.value && !event.target.closest('.user-profile')) {
         isMenuVisible.value = false;
     }
 };
+
+// 【新增】监听登录状态变化，登录后主动获取消息
+watch(isLoggedIn, (newVal) => {
+  if (newVal) {
+    // 延迟一点执行，确保 token 等信息已经设置好
+    setTimeout(() => {
+      messageStore.fetchConversations();
+    }, 100);
+  }
+}, { immediate: true }); // immediate: true 可以在组件初始化时也执行一次
+
 onMounted(() => {
     document.addEventListener('click', handleClickOutside);
+    // 【修改】组件挂载时，如果已登录，也获取一次消息
+    // if (isLoggedIn.value) {
+    //   messageStore.fetchConversations();
+    // } 
+    // 上面的 watch 已经包含了此逻辑 (immediate: true)
 });
+
 onUnmounted(() => {
     document.removeEventListener('click', handleClickOutside);
 });
@@ -166,6 +187,22 @@ onUnmounted(() => {
 
 .nav-link.router-link-exact-active {
   background: rgba(255, 208, 236, 0.25);
+}
+
+/* 【新增】未读消息角标样式 */
+.unread-count {
+  background-color: #dc3545; /* 使用更匹配的红色 */
+  color: white;
+  border-radius: 50%;
+  padding: 2px 6px;
+  font-size: 12px;
+  vertical-align: top;
+  margin-left: 4px;
+  font-weight: 600;
+  line-height: 1;
+  min-width: 20px;
+  text-align: center;
+  display: inline-block;
 }
 
 .publish-button {

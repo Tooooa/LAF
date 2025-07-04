@@ -1,23 +1,17 @@
 <template>
   <div class="page-container">
-    <!-- 返回按钮 -->
     <div class="back-link-wrapper">
       <router-link to="/items" class="back-link">返回列表</router-link>
     </div>
 
-    <!-- 加载状态 -->
     <div v-if="loading" class="status-info">正在加载物品详情...</div>
     
-    <!-- 错误状态 -->
     <div v-else-if="error" class="status-info error">
       加载失败：{{ error }}. <button @click="fetchItemDetail">重试</button>
     </div>
 
-    <!-- 物品详情内容 -->
     <div v-else-if="item" class="item-detail-container">
-      <!-- 左侧图片画廊 -->
       <div class="image-gallery">
-        <!-- 修改点3：正确处理图片显示 -->
         <img 
           v-if="mainImage" 
           :src="mainImage" 
@@ -28,7 +22,6 @@
         <div v-else class="no-image-placeholder">暂无图片</div>
       </div>
 
-      <!-- 右侧信息区域 -->
       <div class="item-info">
         <header class="info-header">
           <h1 class="item-title">{{ item.title }}</h1>
@@ -38,26 +31,26 @@
         <div class="info-body">
           <p><strong>描述：</strong>{{ item.description || '暂无描述' }}</p>
           <p><strong>分类：</strong>{{ item.category?.name || '未分类' }}</p>
-          <!-- 修改点4：使用正确的属性名 -->
           <p><strong>{{ item.type === 'lost' ? '丢失' : '捡到' }}地点：</strong>
             {{ item.location }} {{ item.locationDetail ? `(${item.locationDetail})` : '' }}
           </p>
-          <!-- 修改点5：使用 lostDate 而不是 date -->
           <p><strong>{{ item.type === 'lost' ? '丢失' : '捡到' }}日期：</strong>
             {{ new Date(item.lostDate).toLocaleDateString() }}
           </p>
           <p><strong>联系方式：</strong>{{ item.contactInfo || '发布者未提供' }}</p>
-          <!-- 修改点6：使用 author 而不是 user -->
           <p><strong>发布者：</strong>{{ item.author?.username || '匿名用户' }}</p>
           <p><strong>发布时间：</strong>{{ new Date(item.createdAt).toLocaleString() }}</p>
         </div>
+
         <footer class="info-footer">
-          <!-- 
-            *** 新增：标记为已找回按钮 ***
-            - v-if="isOwner && item.status === 'active'": 
-              确保只有所有者，并且在物品是活动状态时，才显示此按钮。
-            - @click="markAsResolved": 点击时调用你已经写好的函数。
-          -->
+          <button
+            v-if="!isOwner"
+            @click="startConversation"
+            class="action-button primary"
+          >
+            发起私信
+          </button>
+          
           <button 
             v-if="isOwner && item.status === 'active'" 
             @click="markAsResolved" 
@@ -65,11 +58,7 @@
           >
             标记为已找回
           </button>
-          <!-- 
-            删除按钮 
-            - v-if="isOwner": 确保只有物品的发布者才能看到此按钮。
-            - @click="handleDeleteItem": 点击时调用我们的删除方法。
-          -->
+
           <button 
             v-if="isOwner" 
             @click="handleDeleteItem" 
@@ -85,45 +74,33 @@
 
 <script setup>
 import { ref, onMounted, computed } from 'vue';
-import { useRoute, useRouter } from 'vue-router'; // 引入 useRoute 来访问路由信息
+import { useRoute, useRouter } from 'vue-router';
 import { getItemById } from '@/api/items.js';
-import StatusBadge from '@/components/StatusBadge.vue'; // 复用状态徽章组件
-import defaultImage from '@/assets/default-image.png'; // 引入默认图片
+import StatusBadge from '@/components/StatusBadge.vue';
+import defaultImage from '@/assets/default-image.png';
 import { useUserStore } from '@/store/user';
+import { useMessageStore } from '@/store/messages'; // 【新增】引入 Message Store
 import { updateItemStatus } from '@/api/items'; 
 import { deleteItem } from '@/api/items.js';
 
-const route = useRoute(); // 获取当前路由对象
+const route = useRoute();
 const router = useRouter();
 const userStore = useUserStore();
+const messageStore = useMessageStore(); // 【新增】初始化 Message Store
 const loading = ref(true);
 const error = ref(null);
-// -- 响应式状态 --
 const item = ref(null);
-const isLoading = ref(true); // 用于显示加载状态
-// 从路由参数中获取 itemId
 const itemId = route.params.id;
 
 // -- Computed 属性 --
 // 判断当前登录用户是否是物品发布者
 const isOwner = computed(() => {
-  // 1. 确保当前登录用户信息存在
   if (!userStore.user || !userStore.user.id) {
-    console.log('[DEBUG] isOwner: 当前登录用户信息不存在。');
     return false;
   }
-  
-  // 2. 确保物品信息和其作者信息存在
   if (!item.value || !item.value.author || !item.value.author.id) {
-    console.log('[DEBUG] isOwner: 物品信息或作者信息不存在。');
     return false;
   }
-  
-  // 3. 打印出正在比较的两个ID，这是调试的关键步骤
-  console.log(`[DEBUG] isOwner: 正在比较... 当前用户ID: ${userStore.user.id} (类型: ${typeof userStore.user.id}), 物品作者ID: ${item.value.author.id} (类型: ${typeof item.value.author.id})`);
-
-  // 4. 进行比较
-  // 使用 String() 来比较可以避免因类型不同（如 number vs string）导致的问题
   return String(userStore.user.id) === String(item.value.author.id);
 });
 
@@ -131,37 +108,31 @@ const backendUrl = import.meta.env.VITE_API_BASE_URL_NO_VER;
 
 // 计算主图URL
 const mainImage = computed(() => {
-  // 假设后端返回的 item 对象中有一个 imageUrls 数组
-  if (item.value && item.value.images && item.value.images.length > 0) {
-    // console.log('[IMAGETEST]: ', item.value.images[0]);
-    return backendUrl+item.value.images[0];
+  if (item.value && item.value.imageUrls && item.value.imageUrls.length > 0) {
+    return item.value.imageUrls[0];
   }
   return defaultImage;
 });
 
+// -- 方法 --
 // 图片加载失败处理
 const onImageError = (event) => {
   event.target.src = defaultImage;
 };
 
-// 标记为已解决（已找回）
+// 标记为已解决
 const markAsResolved = async () => {
   if (!confirm('确定要将此物品标记为“已解决”吗？此操作不可撤销。')) {
     return;
   }
-
   try {
     const res = await updateItemStatus(item.value.id, {
       status: 'resolved',
       authorId: userStore.user.id,
-      note: '用户自行标记为已解决' // 可选备注
+      note: '用户自行标记为已解决'
     });
-
-    console.log('[DEBUG]: ', res);
-
     if (res.code == 200) {
       alert('状态更新成功！');
-      // 直接在前端更新状态，页面会立即响应
       item.value.status = 'resolved'; 
     } else {
       alert(`操作失败: ${res.message}`);
@@ -172,49 +143,95 @@ const markAsResolved = async () => {
   }
 };
 
+// 删除物品
 async function handleDeleteItem() {
-  // 最佳实践：在执行危险操作前，先向用户确认
   if (!window.confirm('您确定要删除此条信息吗？此操作不可撤销。')) {
-    return; // 如果用户点击“取消”，则函数提前结束
+    return;
   }
-
-  // 检查 item.value 和 item.value.id 是否存在，避免错误
   if (!item.value || !item.value.id) {
     alert('错误：无法获取物品ID，无法删除。');
     return;
   }
-
   try {
-    console.log(`[DEBUG] 准备删除ID为 ${item.value.id} 的物品...`);
-    
-    // 3. 调用 API 函数，传入物品ID
     const response = await deleteItem(item.value.id, userStore.user.id);
-
-    // 4. 处理后端返回的响应
-    // 假设你的 request 封装在成功时会直接返回 data 部分
-    // 并且后端成功时返回 { success: true, message: '删除成功' }
-
-    console.log('[DEBUG]: ', response);
     if (response && response.code == 200) {
-      alert('信息删除成功！'); // 给用户成功的反馈
-
-      // 删除成功后，跳转到物品列表页
-      router.push({ name: 'ItemsList' }); // 假设你的列表页路由名叫 'ItemsList'
-      
+      alert('信息删除成功！');
+      router.push({ name: 'ItemsList' });
     } else {
-      // 如果后端返回了 success: false 的情况
       throw new Error(response.message || '删除失败，但未收到明确错误信息。');
     }
-
   } catch (error) {
-    console.error('删除物品时发生错误:', error);
-    
-    // 向用户显示一个友好的错误提示
-    // 尝试从axios错误中获取后端返回的错误消息
     const errorMessage = error.response?.data?.message || error.message || '网络错误，删除失败，请稍后重试。';
     alert(`错误: ${errorMessage}`);
   }
 }
+
+/**
+ * 【新增】开始对话的函数
+ */
+const startConversation = async () => {
+  // 确保物品和作者信息存在
+  if (!item.value || !item.value.author || !item.value.author.id) {
+    alert('无法获取发布者信息。');
+    return;
+  }
+  // 确保当前用户已登录
+  if (!userStore.user || !userStore.user.id) {
+    alert('请先登录再发起对话。');
+    // 可选：跳转到登录页
+    // router.push('/login');
+    return;
+  }
+
+  try {
+    // 1. 先检查是否已存在这个对话
+    console.log('[ITEM]: ', item.value.author.id);
+    await messageStore.fetchConversations(); // 确保对话列表是新的
+    const existingConv = messageStore.conversations.find(c => 
+      c.itemId === item.value.id && c.participantId === item.value.author.id
+    );
+
+    // console.log('[DEBUG]: (1)existing: ', existingConv);
+    // console.log('[DEBUG]: (2)convs: ', messageStore.conversations);
+
+    if (existingConv) {
+      // 2. 如果存在，直接跳转到该对话
+      router.push(`/messages/${existingConv.id}`);
+    } else {
+      // 3. 如果不存在，发送一条初始消息来创建对话
+      const messageData = {
+        toUserId: item.value.author.id,
+        itemId: item.value.id,
+        content: `你好，我对你发布的 "${item.value.title}" 很感兴趣。`
+      };
+      // console.log('[DEBUG]: (3)mes data: ', messageData);
+      
+      const newConversation = await messageStore.sendNewMessage(messageData);
+
+      // console.log('[DEBUG]: (4)message: ', newConversation);
+      
+      if (newConversation) {
+          // 再次获取最新对话列表以找到新创建的对话ID
+          await messageStore.fetchConversations(); 
+          const conv = messageStore.conversations.find(c.itemId === item.value.id && c.participantId === item.value.author.id);
+          console.log('[new message]: ', conv);
+          if (conv) {
+              router.push(`/messages/${conv.id}`);
+          } else {
+              // 如果因为某些原因找不到，跳转到消息列表页
+              router.push('/messages');
+          }
+      } else {
+          // 处理API返回失败的情况
+          alert('无法发起对话，请稍后再试。');
+      }
+    }
+  } catch (error) {
+    console.error("发起对话时出错:", error);
+    alert('操作失败，请检查网络或稍后重试。');
+  }
+};
+
 
 // 获取物品详情的函数
 async function fetchItemDetail() {
@@ -222,12 +239,12 @@ async function fetchItemDetail() {
   error.value = null;
   try {
     const res = await getItemById(itemId);
-    console.log('[DEBUG]: id search, result: ', res);
     if (Array.isArray(res) && res.length > 0) {
       item.value = res[0];
     } else {
       error.value = '未找到该物品';
-      router.push('/items');
+      // 可选：短暂显示信息后跳转
+      setTimeout(() => router.push('/items'), 2000);
     } 
   } catch (err) {
     console.error(`获取ID为 ${itemId} 的物品失败:`, err);
@@ -241,7 +258,6 @@ async function fetchItemDetail() {
 onMounted(() => {
   fetchItemDetail();
 });
-
 </script>
 
 <style scoped>
@@ -291,6 +307,17 @@ onMounted(() => {
   background-color: #f0f0f0;
 }
 
+.no-image-placeholder {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #f0f0f0;
+  color: #999;
+  border-radius: 8px;
+}
+
 .info-header {
   display: flex;
   justify-content: space-between;
@@ -320,6 +347,7 @@ onMounted(() => {
   margin-top: 2rem;
   display: flex;
   gap: 0.8rem;
+  flex-wrap: wrap; /* 【修改】允许按钮换行 */
 }
 
 .action-button {
@@ -335,6 +363,8 @@ onMounted(() => {
   border-color: #aaa;
   background-color: #f1f1f1;
 }
+
+/* 【新增】主要按钮样式 */
 .action-button.primary {
   background-color: #007bff;
   color: white;
@@ -343,6 +373,7 @@ onMounted(() => {
 .action-button.primary:hover {
   background-color: #0056b3;
 }
+
 .action-button.danger {
     background-color: #dc3545;
     color: white;
@@ -353,11 +384,18 @@ onMounted(() => {
 }
 
 .action-button.success {
-  background-color: #dcfce7; /* 淡绿色背景 */
-  border-color: #bbf7d0;
-  color: #166534; /* 深绿色文字 */
+  background-color: #28a745; /*【修改】使用更鲜明的成功色 */
+  color: white;
+  border-color: #28a745;
 }
 .action-button.success:hover {
-  background-color: #d0f7de;
+  background-color: #218838;
+}
+
+/* 响应式布局：在小屏幕上垂直排列 */
+@media (max-width: 768px) {
+  .item-detail-container {
+    grid-template-columns: 1fr; /* 单列布局 */
+  }
 }
 </style>

@@ -39,7 +39,7 @@ async function createUserToken(user_id, token_type, token_hash, expires_at) {
 
 // 获取 Token 信息
 async function getUserTokenByTokenHash(token_hash) {
-  const pool = await connect();
+  const pool = await database.connect();
   const result = await pool.request()
     .input('token_hash', sql.NVarChar, token_hash)
     .query(`
@@ -50,7 +50,7 @@ async function getUserTokenByTokenHash(token_hash) {
 
 // 撤销 Token
 async function revokeUserToken(token_hash) {
-  const pool = await connect();
+  const pool = await database.connect();
   const result = await pool.request()
     .input('token_hash', sql.NVarChar, token_hash)
     .query(`
@@ -61,7 +61,7 @@ async function revokeUserToken(token_hash) {
 
 // 获取有效的 Token
 async function getValidUserTokens() {
-  const pool = await connect();
+  const pool = await database.connect();
   const result = await pool.request()
     .query(`
       SELECT * FROM user_tokens WHERE expires_at > GETDATE() AND is_revoked = 0;
@@ -71,7 +71,7 @@ async function getValidUserTokens() {
 
 // 删除过期或撤销的 Token
 async function deleteExpiredOrRevokedTokens() {
-  const pool = await connect();
+  const pool = await database.connect();
   const result = await pool.request()
     .query(`
       DELETE FROM user_tokens WHERE expires_at < GETDATE() OR is_revoked = 1;
@@ -81,7 +81,7 @@ async function deleteExpiredOrRevokedTokens() {
 
 // 获取用户的 Token（按用户 ID）
 async function getUserTokensByUserId(user_id) {
-  const pool = await connect();
+  const pool = await database.connect();
   const result = await pool.request()
     .input('user_id', sql.BigInt, user_id)
     .query(`

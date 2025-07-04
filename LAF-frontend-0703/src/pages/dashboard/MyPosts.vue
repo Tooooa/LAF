@@ -84,9 +84,9 @@ const fetchUserItems = async (page = 1) => {
       sortOrder: 'desc',
     };
     // 使用你封装好的 getItems 方法
-    console.log('[DEBUG]: my params: ', params);
+    // console.log('[DEBUG]: my params: ', params);
     const response = await getItems(params);
-    console.log('[DEBUG]: my posts: ', response);
+    // console.log('[DEBUG]: my posts: ', response);
     items.value = response;
     pagination.totalItems = response.length || 0;
     pagination.totalPages = Math.ceil(pagination.totalItems / pagination.pageSize) || 1;

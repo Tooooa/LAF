@@ -84,6 +84,7 @@ const fetchMapData = async () => {
     console.log('即将发送API请求:', apiUrl);
     
     const response = await fetch(apiUrl);
+    console.log('map api: ', response);
     if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
     
     const result = await response.json();

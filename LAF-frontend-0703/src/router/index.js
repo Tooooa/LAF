@@ -14,6 +14,7 @@ import MyMessages from '../pages/dashboard/MyMessages.vue';
 import MyNotifications from '../pages/dashboard/MyNotifications.vue';
 import ProfileSettings from '../pages/dashboard/ProfileSettings.vue';
 import MapViewPage from '@/pages/MapViewPage.vue';
+import MessagesPage from '@/pages/MessagesPage.vue';
 
 const routes = [
   {
@@ -93,6 +94,19 @@ const routes = [
         component: ProfileSettings,
       },
     ],
+  },
+    {
+    path: '/messages',
+    name: 'Messages',
+    component: MessagesPage,
+    meta: { requiresAuth: true }, // 私信需要登录
+    children: [
+      {
+        path: ':conversationId', // 使用子路由来处理选中的对话
+        name: 'ConversationDetail',
+        component: MessagesPage, // 同样渲染父组件，父组件内部逻辑会处理
+      },
+    ]
   },
     // 新增路由
   { 

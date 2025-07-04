@@ -1,3 +1,4 @@
+const database = require('../config/database');
 const sql = require('mssql');
 const bcrypt = require('bcryptjs');
 
@@ -26,7 +27,7 @@ async function connect() {
 // 创建新的用户
 async function createUser(username, phone, email, password, avatar = null, status = 'active') {
   const hashedPassword = await bcrypt.hash(password, 10);
-  const pool = await connect();
+  const pool = await database.connect();
   const result = await pool.request()
     .input('username', sql.NVarChar, username)
     .input('phone', sql.NVarChar, phone)
@@ -43,7 +44,7 @@ async function createUser(username, phone, email, password, avatar = null, statu
 
 // 获取用户信息
 async function getUserByUsername(username) {
-  const pool = await connect();
+  const pool = await database.connect();
   const result = await pool.request()
     .input('username', sql.NVarChar, username)
     .query(`
@@ -61,7 +62,7 @@ async function validatePassword(user, password) {
 
 // 更新用户登录时间
 async function updateLastLoginAt(userId) {
-  const pool = await connect();
+  const pool = await database.connect();
   const result = await pool.request()
     .input('user_id', sql.BigInt, userId)
     .query(`
@@ -72,7 +73,7 @@ async function updateLastLoginAt(userId) {
 
 // 获取用户状态
 async function getUserStatus(userId) {
-  const pool = await connect();
+  const pool = await database.connect();
   const result = await pool.request()
     .input('user_id', sql.BigInt, userId)
     .query(`
@@ -83,7 +84,7 @@ async function getUserStatus(userId) {
 
 // 更新用户状态
 async function updateUserStatus(userId, status) {
-  const pool = await connect();
+  const pool = await database.connect();
   const result = await pool.request()
     .input('user_id', sql.BigInt, userId)
     .input('status', sql.NVarChar, status)
@@ -95,7 +96,7 @@ async function updateUserStatus(userId, status) {
 
 // 获取用户的所有 Token（如果需要）
 async function getUserTokens(userId) {
-  const pool = await connect();
+  const pool = await database.connect();
   const result = await pool.request()
     .input('user_id', sql.BigInt, userId)
     .query(`
@@ -110,7 +111,7 @@ async function getUserTokens(userId) {
  * @returns {Promise<Object|null>} 用户对象或null
  */
 async function getUserById(id) {
-  const pool = await connect();
+  const pool = await database.connect();
   try {
     const result = await pool.request()
       .input('id', sql.BigInt, id)
@@ -140,7 +141,7 @@ async function getUserById(id) {
  * @returns {Promise<boolean>} 是否更新成功
  */
 async function updateUserProfile(id, updates) {
-  const pool = await connect();
+  const pool = await database.connect();
   try {
     const result = await pool.request()
       .input('id', sql.BigInt, id)
@@ -169,7 +170,7 @@ async function updateUserProfile(id, updates) {
  */
 async function updateUserPassword(id, newPassword) {
   const hashedPassword = await bcrypt.hash(newPassword, 10);
-  const pool = await connect();
+  const pool = await database.connect();
   try {
     const result = await pool.request()
       .input('id', sql.BigInt, id)

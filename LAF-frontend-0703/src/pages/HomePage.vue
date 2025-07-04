@@ -93,7 +93,7 @@ const isLoading = ref(true);
     // 步骤1: 调用新的智能解析API
     const res = await parseIntelligentQuery({ query });
 
-    console.log('[DEBUG]: 智能解析', res);
+    // console.log('[DEBUG]: 智能解析', res);
 
     // 步骤2: 根据解析结果构建查询参数并跳转
     if (res && res.data && res.data.data.filters) {
@@ -101,7 +101,7 @@ const isLoading = ref(true);
       
       const queryParams = {};
 
-      console.log('[DEBUG]: 智能解析', extractedKeywords, suggestedCategory, suggestedLocation);
+      // console.log('[DEBUG]: 智能解析', extractedKeywords, suggestedCategory, suggestedLocation);
 
       if (extractedKeywords && extractedKeywords.length > 0) {
         queryParams.keyword = extractedKeywords.join(' ');
