@@ -127,11 +127,14 @@ const isOwner = computed(() => {
   return String(userStore.user.id) === String(item.value.author.id);
 });
 
+const backendUrl = import.meta.env.VITE_API_BASE_URL_NO_VER;
+
 // 计算主图URL
 const mainImage = computed(() => {
   // 假设后端返回的 item 对象中有一个 imageUrls 数组
-  if (item.value && item.value.imageUrls && item.value.imageUrls.length > 0) {
-    return item.value.imageUrls[0];
+  if (item.value && item.value.images && item.value.images.length > 0) {
+    // console.log('[IMAGETEST]: ', item.value.images[0]);
+    return backendUrl+item.value.images[0];
   }
   return defaultImage;
 });
